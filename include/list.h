@@ -2,10 +2,8 @@
 #ifndef __TOOLS_LINUX_LIST_H
 #define __TOOLS_LINUX_LIST_H
 
-#include <linux/types.h>
-#include <linux/poison.h>
-#include <linux/kernel.h>
-#include <linux/compiler.h>
+#include "comm.h"
+C_FUNCTION_BEGIN
 
 /*
  * Simple doubly linked list implementation.
@@ -769,4 +767,5 @@ static inline void list_del_range(struct list_head *begin,
 #define list_for_each_from(pos, head) \
 	for (; pos != (head); pos = pos->next)
 
+C_FUNCTION_END
 #endif /* __TOOLS_LINUX_LIST_H */

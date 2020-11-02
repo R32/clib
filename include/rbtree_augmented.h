@@ -14,10 +14,8 @@
 
 #ifndef _TOOLS_LINUX_RBTREE_AUGMENTED_H
 #define _TOOLS_LINUX_RBTREE_AUGMENTED_H
-
-#include <linux/compiler.h>
-#include <linux/rbtree.h>
-
+#include "rbtree.h"
+C_FUNCTION_BEGIN
 /*
  * Please note - only struct rb_augment_callbacks and the prototypes for
  * rb_insert_augmented() and rb_erase_augmented() are intended to be public.
@@ -158,13 +156,13 @@ RB_DECLARE_CALLBACKS(RBSTATIC, RBNAME,					      \
 
 static inline void rb_set_parent(struct rb_node *rb, struct rb_node *p)
 {
-	rb->__rb_parent_color = rb_color(rb) | (unsigned long)p;
+	rb->__rb_parent_color = rb_color(rb) | (size_t)p;
 }
 
 static inline void rb_set_parent_color(struct rb_node *rb,
 				       struct rb_node *p, int color)
 {
-	rb->__rb_parent_color = (unsigned long)p | color;
+	rb->__rb_parent_color = (size_t)p | color;
 }
 
 static inline void
@@ -190,7 +188,7 @@ __rb_erase_augmented(struct rb_node *node, struct rb_root *root,
 	struct rb_node *child = node->rb_right;
 	struct rb_node *tmp = node->rb_left;
 	struct rb_node *parent, *rebalance;
-	unsigned long pc;
+	size_t pc;
 
 	if (!tmp) {
 		/*
@@ -304,5 +302,5 @@ rb_erase_augmented_cached(struct rb_node *node, struct rb_root_cached *root,
 		root->rb_leftmost = rb_next(node);
 	rb_erase_augmented(node, &root->rb_root, augment);
 }
-
+C_FUNCTION_END
 #endif /* _TOOLS_LINUX_RBTREE_AUGMENTED_H */

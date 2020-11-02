@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\rbtree.c" />
     <ClCompile Include="..\..\src\slist.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -26,8 +26,21 @@
 #   endif
 #endif
 
-#ifdef _MSC_VER
+#ifndef inline
 #   define inline __inline
+#endif
+
+#ifndef __always_inline
+#   ifdef _MSC_VER
+#       define __always_inline __forceinline
+#   elif defined(inline)
+#       define __always_inline inline
+#   else
+#       define __always_inline
+#   endif
+#endif
+
+#ifdef _MSC_VER
 #   define snprintf _snprintf
 #   define ALIGNED_(x) __declspec(align(x))
 #else
@@ -40,10 +53,36 @@
 #   define IS_64
 #endif
 
-
 // singly linked list
 struct slist_head {
 	struct slist_head* next;
 };
+
+// doubly linked list
+struct list_head {
+	struct list_head *next, *prev;
+};
+
+// used for hashtable
+struct hlist_head {
+	struct hlist_node *first;
+};
+
+struct hlist_node {
+	struct hlist_node *next, **pprev;
+};
+
+// some compatibility for files copied from linux
+#ifndef READ_ONCE
+#   define READ_ONCE(x) (x)
+#   define WRITE_ONCE(x, val) x=(val)
+#   define LIST_POISON1 NULL
+#   define LIST_POISON2 NULL
+#endif
+
+#ifndef unlikely
+#   define likely(x) (x)
+#   define unlikely(x) (x)
+#endif
 
 #endif
