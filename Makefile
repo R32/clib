@@ -31,7 +31,7 @@ FORCE:;
 $(EXE): $(OBJ)/main.o $(LIB)
 	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(OBJ) -lr32c -o $@
 
-$(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o)
+$(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o ucs2.o)
 	ar rcs $@ $^
 
 $(OBJ):
@@ -45,4 +45,7 @@ $(OBJ)/slist.o: $(SRC)/slist.c $(INC)/slist.h $(COMM_H)
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
 $(OBJ)/rbtree.o: $(SRC)/rbtree.c $(INC)/rbtree.h $(INC)/rbtree_augmented.h $(COMM_H)
+	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+
+$(OBJ)/ucs2.o: $(SRC)/ucs2.c $(INC)/ucs2.h $(COMM_H)
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@

@@ -1,17 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "comm.h"
 #include "slist.h"
 #include "assert.h"
 #include "circ_buf.h"
 #include "list.h"
 #include "rbtree_augmented.h"
+#include "ucs2.h"
 
 struct blk_s {
 	int n;
 	struct slist_head link;
 	struct rb_node rb;
 };
+
+static void t_ucs2() {
+	unsigned char utf8_copy[32];
+	unsigned char utf8[] =
+		"\xE4\xB8\x87\xE8\x88\xAC\xE7\x9A\x86\xE4\xB8"
+		"\x8B\xE5\x93\x81\x2C\x20\xF0\xA8\xB0\xBB\x41";
+	wchar_t ucs2_copy[32];
+	wchar_t ucs2[] = L"\x4e07\x822c\x7686\x4e0b\x54c1"  L", \xd863\xdc3b"  L"A";
+	// wcs_to_utf8
+	int bytes = ARRAY_SIZE(utf8) - 1; // strip '\0'
+	assert(wcstoutf8(NULL     , ucs2) == bytes);
+	assert(wcstoutf8(utf8_copy, ucs2) == bytes);
+	assert(memcmp(utf8_copy, utf8, bytes) == 0);
+	// utf8_to_wcs
+	int wslen = ARRAY_SIZE(ucs2) - 1;
+	assert(utf8towcs(NULL     , utf8) == wslen);
+	assert(utf8towcs(ucs2_copy, utf8) == wslen);
+	assert(memcmp(ucs2_copy, ucs2, wslen * sizeof(wchar_t)) == 0);
+}
 
 static void t_slist() {
 	// MSVC doesn't support VLA
@@ -125,6 +146,8 @@ static void t_rbtree() {
 }
 
 int main(int argc, char** args) {
+	setlocale(LC_CTYPE, "");
+	t_ucs2();
 	t_slist();
 	t_rbtree();
 	return 0;

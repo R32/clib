@@ -1,6 +1,8 @@
 #ifndef COMM_H
 #define COMM_H
 
+#include <locale.h>
+#include <wchar.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -45,6 +47,10 @@
 #   define ALIGNED_(x) __declspec(align(x))
 #else
 #   define ALIGNED_(x) __attribute__ ((aligned(x)))
+#endif
+
+#ifndef ARRAY_SIZE
+#   define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
 #if ((ULONG_MAX) == (0xFFFFFFFFUL))
