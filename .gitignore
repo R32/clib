@@ -13,6 +13,9 @@
 *.lib
 *.a
 *.so
+*.user
+x64
+.vs/
 Release*/
 DeBug/
 dump/

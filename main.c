@@ -10,7 +10,8 @@ struct blk_s {
 };
 
 void t_slist() {
-	int len = 10;
+	// MSVC doesn't support VLA
+	#define len 10
 	int a[len];
 	struct slist_head head = SLIST_HEAD_INIT;
 	int i = 0;
