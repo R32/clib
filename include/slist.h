@@ -3,9 +3,9 @@
 #include "comm.h"
 
 /**
-* ┌──────┐      ┌──────┐       ┌──────┐       ┌──────┐
-* │ HEAD ├next->│  N3  ├next-->│  N2  ├next-->│  N1  ├next-->NULL
-* └──────┘      └──────┘       └──────┘       └──────┘
+* +------+      +------+       +------+       +------+
+* | HEAD |next->|  N3  |next-->|  N2  |next-->|  N1  |next-->NULL
+* +------+      +------+       +------+       +------+
 */
 
 #define SLIST_HEAD_INIT {.next = NULL}
