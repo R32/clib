@@ -28,17 +28,15 @@
 #   endif
 #endif
 
-#ifndef inline
+#if !defined(inline) && defined(_MSC_VER)
 #   define inline __inline
 #endif
 
 #ifndef __always_inline
 #   ifdef _MSC_VER
 #       define __always_inline __forceinline
-#   elif defined(inline)
-#       define __always_inline inline
 #   else
-#       define __always_inline
+#       define __always_inline __attribute__((always_inline))
 #   endif
 #endif
 
