@@ -4,7 +4,7 @@ INC      := include
 SRC      := src
 OBJ      := obj
 EXE      := test.exe
-LIB      := $(OBJ)/libr32c.a
+LIB      := libr32c.a
 CFLAGS   := -fshort-wchar
 INCLUDES := -I$(INC)
 
@@ -14,7 +14,6 @@ else
     CC   := gcc
 endif
 
-COMM_H   := $(INC)/comm.h
 
 lib: $(OBJ) $(LIB)
 
@@ -22,30 +21,34 @@ test: $(OBJ) $(EXE) FORCE
 	./$(EXE)
 
 clean:
-	rm -rf *.exe $(OBJ)
+	rm -rf $(EXE) $(LIB) $(OBJ)
 
 FORCE:;
 
 .PHONY: all clean lib FORCE
 
+$(OBJ):
+	@mkdir -p $@
+
 $(EXE): $(OBJ)/main.o $(LIB)
-	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(OBJ) -lr32c -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(dir $(LIB)) -lr32c -o $@
 
 $(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o ucs2.o)
 	ar rcs $@ $^
 
-$(OBJ):
-	@mkdir -p $@
+# lower-case vpath, NOTE: Don't uses vpath to match the generated file.
+vpath %.h $(INC)
+vpath %.c $(SRC)
 
-# obj/*.o
-$(OBJ)/main.o: main.c $(COMM_H)
+# .exe
+$(OBJ)/main.o: main.c comm.h
+
+# .lib
+$(OBJ)/%.o: %.c comm.h
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
-$(OBJ)/slist.o: $(SRC)/slist.c $(INC)/slist.h $(COMM_H)
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+$(OBJ)/ucs2.o: ucs2.c ucs2.h
 
-$(OBJ)/rbtree.o: $(SRC)/rbtree.c $(INC)/rbtree.h $(INC)/rbtree_augmented.h $(COMM_H)
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+$(OBJ)/slist.o: slist.c slist.h
 
-$(OBJ)/ucs2.o: $(SRC)/ucs2.c $(INC)/ucs2.h $(COMM_H)
-	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
+$(OBJ)/rbtree.o: rbtree.c rbtree.h rbtree_augmented.h
