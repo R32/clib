@@ -15,33 +15,36 @@
 #define slist_entry(ptr, type, member) \
 	container_of(ptr, type, member)
 
+#define slist_first(head) \
+	((head)->next)
+
 #define slist_first_entry(head, type, member) \
-	slist_entry((head)->next, type, member)
+	slist_entry(slist_first(head), type, member)
 
 #define slist_for_each(pos, head) \
-	for (pos = (head)->next; pos; pos = pos->next)
+	for (pos = slist_first(head); pos; pos = pos->next)
 
 static inline void INIT_SLIST_HEAD(struct slist_head *head) {
-	head->next = NULL;
+	slist_first(head) = NULL;
 }
 static inline bool slist_empty(struct slist_head* head) {
-	return head->next == NULL;
+	return slist_first(head) == NULL;
 }
 static inline bool slist_singular(struct slist_head* head) {
-	return head->next && head->next->next == NULL;
+	return slist_first(head) && slist_first(head)->next == NULL;
 }
 
 // Adds node to the beginning of the list if `head` is the HEAD of the list.
 // Adds node after `head`. e.g: slist_add(node, tail).
 static inline void slist_add(struct slist_head *newz, struct slist_head *head) {
-	newz->next = head->next;
-	head->next = newz;
+	newz->next = slist_first(head);
+	slist_first(head) = newz;
 }
 
 // Pops the first item from the HEAD, or NULL if empty.
 static inline struct slist_head* slist_pop(struct slist_head *head) {
-	struct slist_head* ret = head->next;
-	head->next = ret->next;
+	struct slist_head* ret = slist_first(head);
+	slist_first(head) = ret->next;
 	return ret;
 }
 

@@ -2,7 +2,7 @@
 
 bool slist_remove(struct slist_head *node, struct slist_head *head) {
 	struct slist_head *prev = head;
-	struct slist_head *curr = head->next;
+	struct slist_head *curr = slist_first(head);
 	while(curr) {
 		if (curr == node) {
 			prev->next = curr->next;
@@ -15,8 +15,8 @@ bool slist_remove(struct slist_head *node, struct slist_head *head) {
 }
 
 void slist_rev(struct slist_head *head) {
-	struct slist_head *cur = head->next;
 	struct slist_head *nxt = NULL;
+	struct slist_head *cur = slist_first(head);
 	INIT_SLIST_HEAD(head);
 	while(cur) {
 		nxt = cur->next;

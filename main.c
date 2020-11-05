@@ -65,7 +65,7 @@ static void t_slist() {
 	struct blk_s* data = slist_entry( slist_pop(&head), struct blk_s, link ); // popup
 	assert(data->n == a[i++] && slist_len(&head) == len - 1);
 	free(data);
-	while(!slist_empty(&head)) {
+	while(slist_first(&head)) {
 		data = slist_entry( slist_pop(&head), struct blk_s, link );
 		assert(data->n == a[i++]);
 		free(data);
