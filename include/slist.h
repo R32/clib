@@ -18,11 +18,14 @@
 #define slist_first(head) \
 	((head)->next)
 
+#define slist_next(node) \
+	((node)->next)
+
 #define slist_first_entry(head, type, member) \
 	slist_entry(slist_first(head), type, member)
 
 #define slist_for_each(pos, head) \
-	for (pos = slist_first(head); pos; pos = pos->next)
+	for (pos = slist_first(head); pos; pos = slist_next(pos))
 
 static inline void INIT_SLIST_HEAD(struct slist_head *head) {
 	slist_first(head) = NULL;
