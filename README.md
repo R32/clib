@@ -1,6 +1,8 @@
 clib
 --------
 
+- `tinyalloc`: **first-class heaps** can be destroyed at once instead of deallocating each object separately.
+
 - `slist.h`: Singly Linked List.
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs

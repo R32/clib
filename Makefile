@@ -33,7 +33,7 @@ $(OBJ):
 $(EXE): $(OBJ)/main.o $(LIB)
 	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(dir $(LIB)) -lr32c -o $@
 
-$(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o ucs2.o)
+$(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o ucs2.o tinyalloc.o)
 	ar rcs $@ $^
 
 # lower-case vpath, NOTE: Don't uses vpath to match the generated file.
@@ -52,3 +52,5 @@ $(OBJ)/ucs2.o: ucs2.c ucs2.h
 $(OBJ)/slist.o: slist.c slist.h
 
 $(OBJ)/rbtree.o: rbtree.c rbtree.h rbtree_augmented.h
+
+$(OBJ)/tinyalloc.o: tinyalloc.c tinyalloc.h

@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <time.h>
 #include "comm.h"
 #include "slist.h"
-#include "assert.h"
 #include "circ_buf.h"
 #include "list.h"
 #include "rbtree_augmented.h"
 #include "ucs2.h"
+#include "tinyalloc.h"
 
 struct blk_s {
 	int n;
@@ -36,17 +38,17 @@ static void t_ucs2() {
 
 static void t_slist() {
 	// MSVC doesn't support VLA
-	#define len 10
-	int a[len];
+	#define SLEN 10
+	int a[SLEN];
 	struct slist_head head = SLIST_HEAD_INIT;
 	int i = 0;
-	for(; i < len; i++) {
+	for(; i < SLEN; i++) {
 		struct blk_s* data = malloc(sizeof(struct blk_s));
 		data->n = i * i;
 		a[i] = i * i;
 		slist_add(&data->link, &head);
 	}
-	assert(slist_len(&head) == len);
+	assert(slist_len(&head) == SLEN);
 
 	struct slist_head* pos; // for loop
 	slist_for_each(pos, &head) {
@@ -63,7 +65,7 @@ static void t_slist() {
 	}
 	i = 0;
 	struct blk_s* data = slist_entry( slist_pop(&head), struct blk_s, link ); // popup
-	assert(data->n == a[i++] && slist_len(&head) == len - 1);
+	assert(data->n == a[i++] && slist_len(&head) == SLEN - 1);
 	free(data);
 	while(slist_first(&head)) {
 		data = slist_entry( slist_pop(&head), struct blk_s, link );
@@ -145,10 +147,110 @@ static void t_rbtree() {
 	assert(rb_first(&root) == NULL);
 }
 
+void shuffle(void* a[], int len) {
+	char* tmp = NULL;
+	int t;
+	for(int i =0; i < len; i++) {
+		t = rand() % len;
+		tmp = a[t];
+		a[t] = a[i];
+		a[i] = tmp;
+	}
+}
+// copeid from tinyalloc.c for test
+struct meta {
+	int datasize;
+	void* data[0];
+};
+struct chunk {
+	int mempos;
+	int memsize;
+	int frags;
+	int blocks;
+	struct meta* freelist[8 + 1];
+	struct slist_head link;
+	char mem[0];
+};
+void chk_stat_print(struct chunk* chk) {
+	printf("used: %3d%%, frags: %5d, blocks: %5d\n",
+	  (int)((float)chk->mempos / chk->memsize * 100),
+	  chk->frags,
+	  chk->blocks
+	);
+}
+void t_tinyalloc() {
+	srand((uint32_t)time(NULL));
+	SLIST_HEAD(root);
+	int line = 64 * 1024 - sizeof(struct chunk); //
+	int blocks = 0;
+	int piece = 16;
+	int meta_piece = piece + sizeof(struct meta);
+	while (line >= meta_piece) {
+		tinyalloc(&root, piece);
+		line -= meta_piece;
+		blocks++;
+	}
+	assert(slist_singular(&root));
+	struct chunk* chk = slist_first_entry(&root, struct chunk, link);
+	assert(chk->mempos == chk->memsize - line);
+	assert(chk->blocks == blocks);
+	// discard directly
+	tinydestroy(&root);
+	assert(slist_empty(&root));
+
+	// randomly alloc and free
+#	define RAND() (rand() & (256-1))
+#	define __alloc(size) tinyalloc(&root, size)
+#	define __free(ptr) tinyfree(&root, ptr)
+#	define ASIZE     960
+#	define HALFASIZE (ASIZE >> 1)
+
+	char* aptr[ASIZE];
+	int i;
+	for(i = 0; i < ASIZE; i++) {
+		aptr[i] = __alloc(RAND());
+	}
+	shuffle((void**)aptr, ASIZE);
+	shuffle((void**)aptr, ASIZE);
+	struct slist_head* pos;
+	slist_for_each(pos, &root) {
+		chk = slist_entry(pos, struct chunk, link);
+		assert(chk->frags == 0);
+	}
+	// HALFASIZE free & alloc
+	for(i = 0; i < HALFASIZE; i++) __free(aptr[i]);
+	for(i = 0; i < HALFASIZE; i++) aptr[i] = __alloc(RAND());
+
+	shuffle((void**)aptr, ASIZE);
+	// another HALFSIZE
+	for(i = HALFASIZE; i < ASIZE; i++) __free(aptr[i]);
+	for(i = HALFASIZE; i < ASIZE; i++) aptr[i] = __alloc(RAND());
+
+	//slist_for_each(pos, &root) {
+	//	chk = slist_entry(pos, struct chunk, link);
+	//	chk_stat_print(chk);
+	//}
+	for(i = 0; i < ASIZE; i++) {
+		__free(aptr[i]);
+	}
+	char* bigptr = __alloc(1024 * 88);
+	assert(bigptr);
+	__free(bigptr);
+	slist_for_each(pos, &root) {
+		chk = slist_entry(pos, struct chunk, link);
+		assert(chk->mempos == 0 && chk->frags == 0 && chk->blocks == 0);
+	}
+	tinydestroy(&root);
+	assert(slist_empty(&root));
+}
 int main(int argc, char** args) {
+
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();
 	t_rbtree();
+	for (int i = 0; i < 100; i++) {
+		t_tinyalloc();
+	}
 	return 0;
 }
