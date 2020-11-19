@@ -1,7 +1,7 @@
 clib
 --------
 
-- `tinyalloc`: **first-class heaps** can be destroyed at once instead of deallocating each object separately.
+- `tinyalloc`: the **first-class heaps** that can be destroyed at once instead of deallocating each object separately.
 
 - `slist.h`: Singly Linked List.
 

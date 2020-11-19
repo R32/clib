@@ -41,6 +41,15 @@ static struct chunk* chk_new(int k) {
 	return chk;
 }
 
+static inline void chk_reset(struct chunk* chk) {
+	for (int i = 0; i < (FREELIST_MAX + 1); i++) {
+		FREE_ROOT(chk, i) = NULL;
+	}
+	chk->frags = 0;
+	chk->blocks = 0;
+	chk->mempos = 0;
+}
+
 static inline int freelist_pos(unsigned int mul) {
 	int i = mul / BLK_BASE - 1;
 	return i < FREELIST_MAX ? i : FREELIST_MAX;
@@ -102,30 +111,40 @@ void* tinyalloc(struct slist_head* root, int size) {
 	} else {
 		chk = slist_first_entry(root, struct chunk, link);
 	}
+	struct meta* meta;
+	struct chunk* prev = NULL;
 	int needs = sizeof(struct meta) + size;
 	do {
-		struct meta* meta = freelist_get(chk, size);
+		meta = freelist_get(chk, size);
 		if (meta) {
 			chk->frags--;
-			return (void*)meta->data;
+			break;
 		}
 		if (chk->mempos + needs <= chk->memsize) {
 			meta = (struct meta*)chk_posptr(chk);
 			META_DATASIZE(meta) = size;
 			chk->mempos += needs;
 			chk->blocks++;
-			return (void*)meta->data;
+			break;
 		}
 		if (slist_next(&chk->link)) {
+			prev = chk;
 			chk = slist_entry(slist_next(&chk->link), struct chunk, link);
-			// TODO: safely move chk at top of the list?
 		} else {
 			int chksize = needs + (sizeof(struct chunk) + (N1024 - 1)); // since (1025 + 1023) / 1024 == 2
 			chk = chk_new(chksize / N1024 <= K_CHKSIZE ? K_CHKSIZE : chksize / N1024);
+			if (chk == NULL)
+				return NULL;
+			prev = NULL;
 			slist_add(&chk->link, root);
 		}
 	} while(chk);
-	return NULL;
+	// moving current "chk" at top of the list when prev exists
+	if (prev) {
+		slist_next(&prev->link) = slist_next(&chk->link);
+		slist_add(&chk->link, root);
+	}
+	return (void*)meta->data;
 }
 
 #define INTERVAL(meta, chk) \
@@ -150,12 +169,16 @@ void tinyfree(struct slist_head* root, void* ptr) {
 
 	// simply reset
 	if (chk->frags == chk->blocks) {
-		for(i = 0; i < (FREELIST_MAX + 1); i++) {
-			FREE_ROOT(chk, i) = NULL;
-		}
-		chk->frags = 0;
-		chk->blocks = 0;
-		chk->mempos = 0;
+		chk_reset(chk);
+	}
+}
+
+void tinyreset(struct slist_head* root) {
+	struct chunk* chk;
+	struct slist_head* pos;
+	slist_for_each(pos, root) {
+		chk = slist_entry(pos, struct chunk, link);
+		chk_reset(chk);
 	}
 }
 
