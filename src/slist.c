@@ -1,3 +1,9 @@
+/*
+* Copyright (C)2020 Liu WeiMin
+*
+* SPDX-License-Identifier: GPL-2.0
+*/
+
 #include "slist.h"
 
 bool slist_remove(struct slist_head *node, struct slist_head *head) {

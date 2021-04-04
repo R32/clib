@@ -1,3 +1,9 @@
+/*
+* Copyright (C)2020 Liu WeiMin
+*
+* SPDX-License-Identifier: GPL-2.0
+*/
+
 #ifndef R32_UCS2_H
 #define R32_UCS2_H
 
