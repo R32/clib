@@ -16,6 +16,7 @@ struct meta {
 
 static inline int meta_size(struct meta* m) { return sizeof(struct meta) + m->datasize; }
 
+#define META_DATABPTR(m)  ((unsigned char*)&(m)->data)
 #define META_DATASIZE(m)  ((m)->datasize)
 #define FREE_NEXT(m)      ((m)->data[0])
 #define FREE_ROOT(chk, i) ((chk)->freelist[i])
@@ -35,6 +36,10 @@ struct chunk {
 	struct slist_head link;
 	char mem[0];
 };
+
+#define pos_next(chk) slist_next(&(chk)->link)
+#define chk_add(chk, root) slist_add(&(chk)->link, root)
+#define chk_entry(pos) slist_entry(pos, struct chunk, link)
 
 static inline char* chk_posptr(struct chunk* chk) { return chk->mem + chk->mempos; }
 
@@ -76,21 +81,15 @@ static struct meta* freelist_get(struct chunk* chk, int size) {
 			curr = FREE_NEXT(curr);
 			continue;
 		}
-		rest -= sizeof(struct meta); // META_DATASIZE(next_meta)
-		if (rest >= BLK_BASE) {      // Do Split
-			struct meta* next = (struct meta*)((char*)curr->data + size);
+		rest -= sizeof(struct meta);
+		if (rest >= size) { // Do Split
+			struct meta* next = (struct meta*)(META_DATABPTR(curr) + size);
 			META_DATASIZE(curr) = size;
 			META_DATASIZE(next) = rest;
 			chk->blocks++;
 			chk->frags++;
-			int j = freelist_pos(rest);
-			if (j < FREELIST_MAX) {
-				FREE_NEXT(next) = FREE_ROOT(chk, j);
-				FREE_ROOT(chk, j) = next;
-			} else {
-				FREE_NEXT(next) = FREE_NEXT(curr);
-				FREE_NEXT(curr) = next;
-			}
+			FREE_NEXT(next) = FREE_NEXT(curr);
+			FREE_NEXT(curr) = next;
 		}
 		if (prev) {
 			FREE_NEXT(prev) = FREE_NEXT(curr);
@@ -113,7 +112,7 @@ void* tinyalloc(struct slist_head* root, int size) {
 		chk = chk_new(K_CHKSIZE);
 		if (chk == NULL)
 			return NULL;
-		slist_add(&chk->link, root);
+		chk_add(chk, root);
 	} else {
 		chk = slist_first_entry(root, struct chunk, link);
 	}
@@ -133,24 +132,24 @@ void* tinyalloc(struct slist_head* root, int size) {
 			chk->blocks++;
 			break;
 		}
-		if (slist_next(&chk->link)) {
+		if (pos_next(chk)) {
 			prev = chk;
-			chk = slist_entry(slist_next(&chk->link), struct chunk, link);
+			chk = chk_entry(pos_next(chk));
 		} else {
 			int chksize = needs + (sizeof(struct chunk) + (N1024 - 1)); // since (1025 + 1023) / 1024 == 2
 			chk = chk_new(chksize / N1024 <= K_CHKSIZE ? K_CHKSIZE : chksize / N1024);
 			if (chk == NULL)
 				return NULL;
 			prev = NULL;
-			slist_add(&chk->link, root);
+			chk_add(chk, root);
 		}
 	} while(chk);
 	// moving current "chk" at top of the list when prev exists
 	if (prev) {
-		slist_next(&prev->link) = slist_next(&chk->link);
-		slist_add(&chk->link, root);
+		pos_next(prev) = pos_next(chk);
+		chk_add(chk, root);
 	}
-	return (void*)meta->data;
+	return META_DATABPTR(meta);
 }
 
 #define INTERVAL(meta, chk) \
@@ -161,7 +160,7 @@ void tinyfree(struct slist_head* root, void* ptr) {
 	struct slist_head* pos;
 	struct meta* meta = container_of(ptr, struct meta, data);
 	slist_for_each(pos, root) {
-		chk = slist_entry(pos, struct chunk, link);
+		chk = chk_entry(pos);
 		if (INTERVAL(meta, chk))
 			break;
 	}
@@ -183,7 +182,7 @@ void tinyreset(struct slist_head* root) {
 	struct chunk* chk;
 	struct slist_head* pos;
 	slist_for_each(pos, root) {
-		chk = slist_entry(pos, struct chunk, link);
+		chk = chk_entry(pos);
 		chk_reset(chk);
 	}
 }
@@ -191,7 +190,7 @@ void tinyreset(struct slist_head* root) {
 void tinydestroy(struct slist_head* root) {
 	struct chunk* chk;
 	while(slist_first(root)) {
-		chk = slist_entry(slist_pop(root), struct chunk, link);
+		chk = chk_entry(slist_pop(root));
 		free(chk);
 	}
 }
