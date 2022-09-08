@@ -37,8 +37,6 @@ static uint32_t inline decode(uint32_t* state, uint32_t* codep, uint32_t byte) {
 }
 
 /*
-* Copyright (C)2020 Liu WeiMin
-*
 * SPDX-License-Identifier: GPL-2.0
 */
 int utf8towcs(wchar_t* out, const unsigned char* src) {

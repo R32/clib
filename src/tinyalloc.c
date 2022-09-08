@@ -1,6 +1,4 @@
 /*
-* Copyright (C)2020 Liu WeiMin
-*
 * SPDX-License-Identifier: GPL-2.0
 */
 

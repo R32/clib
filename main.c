@@ -171,6 +171,20 @@ struct chunk {
 	struct slist_head link;
 	char mem[0];
 };
+#define PTRSIZE(ptr)       (*(((int*)(ptr)) - 1))
+int ptr_intersect(const void* aa, const void* bb) {
+	char* a = *(char**)aa;
+	char* b = *(char**)bb;
+	assert(PTRSIZE(a) <= 256 && PTRSIZE(b) <= 256);
+	if (a > b) {
+		assert(b + PTRSIZE(b) < a);
+	} else if (a < b) {
+		assert(a + PTRSIZE(a) < b);
+	} else {
+		assert(0);
+	}
+	return a - b;
+}
 void chk_stat_print(struct chunk* chk) {
 	printf("used: %3d%%, frags: %5d, blocks: %5d\n",
 	  (int)((float)chk->mempos / chk->memsize * 100),
@@ -211,7 +225,9 @@ void t_tinyalloc() {
 		aptr[i] = __alloc(RAND());
 	}
 	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
 	shuffle((void**)aptr, ASIZE);
+
 	struct slist_head* pos;
 	slist_for_each(pos, &root) {
 		chk = slist_entry(pos, struct chunk, link);
@@ -222,10 +238,15 @@ void t_tinyalloc() {
 	for(i = 0; i < HALFASIZE; i++) aptr[i] = __alloc(RAND());
 
 	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
+	shuffle((void**)aptr, ASIZE);
 	// another HALFSIZE
 	for(i = HALFASIZE; i < ASIZE; i++) __free(aptr[i]);
 	for(i = HALFASIZE; i < ASIZE; i++) aptr[i] = __alloc(RAND());
 
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
+	shuffle((void**)aptr, ASIZE);
 	//slist_for_each(pos, &root) {
 	//	chk = slist_entry(pos, struct chunk, link);
 	//	chk_stat_print(chk);
