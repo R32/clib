@@ -25,12 +25,12 @@ static void t_ucs2() {
 	wchar_t ucs2_copy[32];
 	wchar_t ucs2[] = L"\x4e07\x822c\x7686\x4e0b\x54c1"  L", \xd863\xdc3b"  L"A";
 	// wcs_to_utf8
-	int bytes = ARRAY_SIZE(utf8) - 1; // strip '\0'
+	int bytes = ARRAYSIZE(utf8) - 1; // strip '\0'
 	assert(wcstoutf8(NULL     , ucs2) == bytes);
 	assert(wcstoutf8(utf8_copy, ucs2) == bytes);
 	assert(memcmp(utf8_copy, utf8, bytes) == 0);
 	// utf8_to_wcs
-	int wslen = ARRAY_SIZE(ucs2) - 1;
+	int wslen = ARRAYSIZE(ucs2) - 1;
 	assert(utf8towcs(NULL     , utf8) == wslen);
 	assert(utf8towcs(ucs2_copy, utf8) == wslen);
 	assert(memcmp(ucs2_copy, ucs2, wslen * sizeof(wchar_t)) == 0);
@@ -171,15 +171,20 @@ struct chunk {
 	struct slist_head link;
 	char mem[0];
 };
-#define PTRSIZE(ptr)       (*(((int*)(ptr)) - 1))
+
+#define BLKMAX             1024
+#define PTRSIZE(ptr)       container_of(ptr, struct meta, data)->datasize
 int ptr_intersect(const void* aa, const void* bb) {
 	char* a = *(char**)aa;
 	char* b = *(char**)bb;
-	assert(PTRSIZE(a) <= 256 && PTRSIZE(b) <= 256);
+
+	assert(PTRSIZE(a) > 0 && PTRSIZE(a) <= BLKMAX);
+	assert(PTRSIZE(b) > 0 && PTRSIZE(b) <= BLKMAX);
+
 	if (a > b) {
-		assert(b + PTRSIZE(b) < a);
+		assert(b + PTRSIZE(b) + sizeof(struct meta) <= a);
 	} else if (a < b) {
-		assert(a + PTRSIZE(a) < b);
+		assert(a + PTRSIZE(a) + sizeof(struct meta) <= b);
 	} else {
 		assert(0);
 	}
@@ -213,7 +218,7 @@ void t_tinyalloc() {
 	assert(slist_empty(&root));
 
 	// randomly alloc and free
-#	define RAND() (rand() & (256-1))
+#	define RAND() (rand() & (BLKMAX-1))
 #	define __alloc(size) tinyalloc(&root, size)
 #	define __free(ptr) tinyfree(&root, ptr)
 #	define ASIZE     960
@@ -265,7 +270,6 @@ void t_tinyalloc() {
 	assert(slist_empty(&root));
 }
 int main(int argc, char** args) {
-
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();

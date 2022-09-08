@@ -51,11 +51,11 @@
 #   define ALIGNED_(x) __attribute__ ((aligned(x)))
 #endif
 
-#ifndef ARRAY_SIZE
-#   define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#ifndef ARRAYSIZE
+#   define ARRAYSIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
-#define NOT_POW2(size, pow2)   (size & (pow2 - 1))
-#define ALIGN_POW2(size, pow2) ((((size) - 1) | (pow2 - 1)) + 1)
+#define NOT_ALIGNED(size, pow2)   (size & (pow2 - 1))
+#define ALIGN_POW2(size, pow2)    ((((size) - 1) | (pow2 - 1)) + 1)
 
 #if ((ULONG_MAX) == (0xFFFFFFFFUL))
 #   define IS_32

@@ -102,7 +102,7 @@ static struct meta* freelist_get(struct chunk* chk, int size) {
 void* tinyalloc(struct slist_head* root, int size) {
 	if (size < BLK_BASE) {
 		size = BLK_BASE;
-	} else if (NOT_POW2(size, BLK_BASE)) {
+	} else if (NOT_ALIGNED(size, BLK_BASE)) {
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
 	struct chunk* chk = NULL;
