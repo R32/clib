@@ -1,6 +1,4 @@
 /*
-* Copyright (C)2020 Liu WeiMin
-*
 * SPDX-License-Identifier: GPL-2.0
 */
 
@@ -53,7 +51,8 @@ static inline void slist_add(struct slist_head *newz, struct slist_head *head) {
 // Pops the first item from the HEAD, or NULL if empty.
 static inline struct slist_head* slist_pop(struct slist_head *head) {
 	struct slist_head* ret = slist_first(head);
-	slist_first(head) = ret->next;
+	if (ret)
+		slist_first(head) = ret->next;
 	return ret;
 }
 
