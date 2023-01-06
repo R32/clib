@@ -157,87 +157,53 @@ void shuffle(void* a[], int len) {
 		a[i] = tmp;
 	}
 }
-// copeid from tinyalloc.c for test
-struct meta {
-	int datasize;
-	void* data[0];
-};
-struct chunk {
-	int mempos;
-	int memsize;
-	int frags;
-	int blocks;
-	struct meta* freelist[8 + 1];
-	struct slist_head link;
-	char mem[0];
-};
 
 #define BLKMAX             1024
-#define PTRSIZE(ptr)       container_of(ptr, struct meta, data)->datasize
+#define PTRSIZE(ptr)       (*(((int*)(ptr)) - 1))
+#define BLK_BASE           (TINYALLOC_BLK_BASE)
+#define IS_ALIGNED(ptr)    (((size_t)(ptr) & (BLK_BASE - 1)) == 0)
+
 int ptr_intersect(const void* aa, const void* bb) {
 	char* a = *(char**)aa;
 	char* b = *(char**)bb;
 
-	assert(PTRSIZE(a) > 0 && PTRSIZE(a) <= BLKMAX);
-	assert(PTRSIZE(b) > 0 && PTRSIZE(b) <= BLKMAX);
+	assert(IS_ALIGNED(a));
+	assert(IS_ALIGNED(b));
+
+	const int MAX = 1028; // ALIGN__8(1024 + sizeof(struct meta)) - sizeof(struct meta);
+
+	assert(PTRSIZE(a) > 0 && PTRSIZE(a) <= MAX);
+	assert(PTRSIZE(b) > 0 && PTRSIZE(b) <= MAX);
 
 	if (a > b) {
-		assert(b + PTRSIZE(b) + sizeof(struct meta) <= a);
+		assert(b + PTRSIZE(b) < a);
 	} else if (a < b) {
-		assert(a + PTRSIZE(a) + sizeof(struct meta) <= b);
+		assert(a + PTRSIZE(a) < b);
 	} else {
 		assert(0);
 	}
 	return a - b;
 }
-void chk_stat_print(struct chunk* chk) {
-	printf("used: %3d%%, frags: %5d, blocks: %5d\n",
-	  (int)((float)chk->mempos / chk->memsize * 100),
-	  chk->frags,
-	  chk->blocks
-	);
-}
 void t_tinyalloc() {
 	srand((uint32_t)time(NULL));
-	SLIST_HEAD(root);
-	int line = 64 * 1024 - sizeof(struct chunk); //
-	int blocks = 0;
-	int piece = 16;
-	int meta_piece = piece + sizeof(struct meta);
-	while (line >= meta_piece) {
-		tinyalloc(&root, piece);
-		line -= meta_piece;
-		blocks++;
-	}
-	assert(slist_singular(&root));
-	struct chunk* chk = slist_first_entry(&root, struct chunk, link);
-	assert(chk->mempos == chk->memsize - line);
-	assert(chk->blocks == blocks);
-	// discard directly
-	tinydestroy(&root);
-	assert(slist_empty(&root));
+	struct tinyalloc_root root = {NULL};
 
 	// randomly alloc and free
-#	define RAND() (rand() & (BLKMAX-1))
-#	define __alloc(size) tinyalloc(&root, size)
-#	define __free(ptr) tinyfree(&root, ptr)
-#	define ASIZE     960
-#	define HALFASIZE (ASIZE >> 1)
-
+	#define RAND()        (rand() & (BLKMAX - 1))
+	#define __alloc(size) tinyalloc(&root, size)
+	#define __free(ptr)   tinyfree(&root, ptr)
+	#define ASIZE         (960)
+	#define HALFASIZE     (ASIZE >> 1)
 	char* aptr[ASIZE];
 	int i;
-	for(i = 0; i < ASIZE; i++) {
+	for (i = 0; i < ASIZE; i++) {
 		aptr[i] = __alloc(RAND());
 	}
+
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
 	shuffle((void**)aptr, ASIZE);
 
-	struct slist_head* pos;
-	slist_for_each(pos, &root) {
-		chk = slist_entry(pos, struct chunk, link);
-		assert(chk->frags == 0);
-	}
 	// HALFASIZE free & alloc
 	for(i = 0; i < HALFASIZE; i++) __free(aptr[i]);
 	for(i = 0; i < HALFASIZE; i++) aptr[i] = __alloc(RAND());
@@ -252,22 +218,16 @@ void t_tinyalloc() {
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
 	shuffle((void**)aptr, ASIZE);
-	//slist_for_each(pos, &root) {
-	//	chk = slist_entry(pos, struct chunk, link);
-	//	chk_stat_print(chk);
-	//}
+
 	for(i = 0; i < ASIZE; i++) {
 		__free(aptr[i]);
 	}
 	char* bigptr = __alloc(1024 * 88);
 	assert(bigptr);
 	__free(bigptr);
-	slist_for_each(pos, &root) {
-		chk = slist_entry(pos, struct chunk, link);
-		assert(chk->mempos == 0 && chk->frags == 0 && chk->blocks == 0);
-	}
+
 	tinydestroy(&root);
-	assert(slist_empty(&root));
+	assert(slist_empty(&root.chunk_head));
 }
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
@@ -277,5 +237,6 @@ int main(int argc, char** args) {
 	for (int i = 0; i < 100; i++) {
 		t_tinyalloc();
 	}
+	printf("done!\n");
 	return 0;
 }
