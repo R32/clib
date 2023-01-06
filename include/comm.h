@@ -57,10 +57,11 @@
 #define NOT_ALIGNED(size, pow2)   (size & (pow2 - 1))
 #define ALIGN_POW2(size, pow2)    ((((size) - 1) | (pow2 - 1)) + 1)
 
-#if ((ULONG_MAX) == (0xFFFFFFFFUL))
-#   define IS_32
+// Below code works fine for most current environments
+#if defined(__LP64__) || defined(_WIN64) || defined(_M_X64) || (defined(__x86_64__) && !defined(__ILP32__) ) || defined(__ia64) || defined (_M_IA64) || defined(__aarch64__) || defined(__powerpc64__) || defined(__ppc64__)
+#   define IS64BIT 1
 #else
-#   define IS_64
+#   define IS32BIT 1
 #endif
 
 // singly linked list
