@@ -16,12 +16,10 @@ struct meta {
 	char data[0];
 };
 
-static inline int meta_size(struct meta* m) { return sizeof(struct meta) + m->size; }
-
 #define META_DATAPTR(m)    ((m)->data)
 #define META_DATASIZE(m)   ((m)->size)
 #define META_FULLSIZE(m)   ((m)->size + sizeof(struct meta))
-#define FREE_NEXT(m)       (*(void**)(m)->data)
+#define FREE_NEXT(m)       (*(void **)(m)->data)
 #define FREE_ROOT(root, i) ((root)->freelist[i])
 #define N1024              1024
 
@@ -40,9 +38,9 @@ struct chunk {
 #define chk_add(chk, root) slist_add(&(chk)->link, chk_root(root))
 #define chk_entry(node)    slist_entry(node, struct chunk, link)
 
-static struct chunk* chk_new(int k)
+static struct chunk *chk_new(int k)
 {
-	struct chunk* chk = malloc(N1024 * k);
+	struct chunk *chk = malloc(N1024 * k);
 	if (!chk)
 		return NULL;
 	chk->size = N1024 * k - sizeof(struct chunk);
@@ -60,15 +58,15 @@ static inline int freelist_index(unsigned int size)
 	return i < FREELIST_MAX ? i : FREELIST_MAX;
 }
 
-static struct meta* freelist_get(struct tinyalloc_root* root, int size)
+static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 {
 	int i = freelist_index(size);
-	struct meta* curr = FREE_ROOT(root, i);
+	struct meta *curr = FREE_ROOT(root, i);
 	if (curr && i < FREELIST_MAX) {
 		FREE_ROOT(root, i) = FREE_NEXT(curr);
 		return curr;
 	}
-	struct meta* prev = NULL;
+	struct meta *prev = NULL;
 	while (curr) {
 		int full = META_FULLSIZE(curr);
 		if (full < size) {
@@ -77,7 +75,7 @@ static struct meta* freelist_get(struct tinyalloc_root* root, int size)
 			continue;
 		}
 		if (full >= size + (BLK_BASE * (FREELIST_MAX + 1))) { // Do Splits
-			struct meta* next = (struct meta*)((char*)curr + size);
+			struct meta *next = (struct meta *)((char *)curr + size);
 			META_DATASIZE(curr) = size - sizeof(struct meta);
 			META_DATASIZE(next) = full - sizeof(struct meta) - size;
 			FREE_NEXT(next) = FREE_NEXT(curr);
@@ -93,19 +91,19 @@ static struct meta* freelist_get(struct tinyalloc_root* root, int size)
 	return curr;
 }
 
-void* tinyalloc(struct tinyalloc_root* root, int size)
+void *tinyalloc(struct tinyalloc_root *root, int size)
 {
 	if (size < (16 - sizeof(struct meta))) {
 		size = 16;
 	} else {
 		size = ALIGN_POW2(size + sizeof(struct meta), BLK_BASE);
 	}
-	struct meta* meta = freelist_get(root, size);
+	struct meta *meta = freelist_get(root, size);
 	if (meta)
 		return META_DATAPTR(meta);
 
-	struct chunk* chk;
-	struct chunk* prev = NULL;
+	struct chunk *chk;
+	struct chunk *prev = NULL;
 	if (slist_empty(chk_root(root))) {
 		chk = chk_new(CHK_SIZE);
 		if (chk == NULL)
@@ -114,10 +112,10 @@ void* tinyalloc(struct tinyalloc_root* root, int size)
 	} else {
 		chk = slist_first_entry(chk_root(root), struct chunk, link);
 	}
-	int len = 1;
+
 	while (true) {
 		if (chk->pos + size <= chk->size) {
-			meta = (struct meta*)(chk->mem + chk->pos);
+			meta = (struct meta *)(chk->mem + chk->pos);
 			META_DATASIZE(meta) = size - sizeof(struct meta);
 			chk->pos += size;
 			break;
@@ -125,7 +123,6 @@ void* tinyalloc(struct tinyalloc_root* root, int size)
 		if (chk_next(chk)) {
 			prev = chk;
 			chk = chk_entry(chk_next(chk));
-			len++;
 		} else {
 			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
 			chk = chk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024);
@@ -143,20 +140,20 @@ void* tinyalloc(struct tinyalloc_root* root, int size)
 	return META_DATAPTR(meta);
 }
 
-void tinyfree(struct tinyalloc_root* root, void* ptr)
+void tinyfree(struct tinyalloc_root *root, void *ptr)
 {
 	if (NOT_ALIGNED((size_t)ptr, BLK_BASE))
 		return;
-	struct meta* meta = container_of(ptr, struct meta, data);
+	struct meta *meta = container_of(ptr, struct meta, data);
 	int i = freelist_index(META_FULLSIZE(meta));
 	FREE_NEXT(meta) = FREE_ROOT(root, i);
 	FREE_ROOT(root, i) = meta;
 }
 
-void tinyreset(struct tinyalloc_root* root)
+void tinyreset(struct tinyalloc_root *root)
 {
-	struct chunk* chk;
-	struct slist_head* pos;
+	struct chunk *chk;
+	struct slist_head *pos;
 	slist_for_each(pos, chk_root(root)) {
 		chk = chk_entry(pos);
 		int align = ((size_t)chk->mem + sizeof(struct meta)) & (BLK_BASE - 1);
@@ -170,10 +167,10 @@ void tinyreset(struct tinyalloc_root* root)
 	}
 }
 
-void tinydestroy(struct tinyalloc_root* root)
+void tinydestroy(struct tinyalloc_root *root)
 {
-	struct chunk* chk;
-	struct slist_head* head = chk_root(root);
+	struct chunk *chk;
+	struct slist_head *head = chk_root(root);
 	while (slist_first(head)) {
 		chk = chk_entry(slist_pop(head));
 		free(chk);

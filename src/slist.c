@@ -4,7 +4,8 @@
 
 #include "slist.h"
 
-bool slist_remove(struct slist_head *node, struct slist_head *head) {
+bool slist_remove(struct slist_head *node, struct slist_head *head)
+{
 	struct slist_head *prev = head;
 	struct slist_head *curr = slist_first(head);
 	while(curr) {
@@ -18,7 +19,8 @@ bool slist_remove(struct slist_head *node, struct slist_head *head) {
 	return false;
 }
 
-void slist_rev(struct slist_head *head) {
+void slist_rev(struct slist_head *head)
+{
 	struct slist_head *nxt = NULL;
 	struct slist_head *cur = slist_first(head);
 	INIT_SLIST_HEAD(head);
@@ -29,9 +31,10 @@ void slist_rev(struct slist_head *head) {
 	}
 }
 
-unsigned int slist_len(struct slist_head *head) {
+unsigned int slist_len(struct slist_head *head)
+{
 	unsigned int i = 0;
-	struct slist_head* pop;
+	struct slist_head *pop;
 	slist_for_each(pop, head) {
 		i++;
 	}

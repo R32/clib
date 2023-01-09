@@ -66,7 +66,7 @@
 
 // singly linked list
 struct slist_head {
-	struct slist_head* next;
+	struct slist_head *next;
 };
 
 // doubly linked list

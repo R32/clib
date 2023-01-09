@@ -17,18 +17,18 @@
 #endif
 struct tinyalloc_root {
 	struct slist_head chunk_head;
-	void* freelist[TINYALLOC_FREELIST_MAX + 1];
+	void *freelist[TINYALLOC_FREELIST_MAX + 1];
 };
 
 C_FUNCTION_BEGIN
 
-void tinyfree(struct tinyalloc_root* root, void* ptr);
+void tinyfree(struct tinyalloc_root *root, void *ptr);
 
-void* tinyalloc(struct tinyalloc_root* root, int size);
+void *tinyalloc(struct tinyalloc_root *root, int size);
 
-void tinyreset(struct tinyalloc_root* root);
+void tinyreset(struct tinyalloc_root *root);
 
-void tinydestroy(struct tinyalloc_root* root);
+void tinydestroy(struct tinyalloc_root *root);
 
 C_FUNCTION_END
 #endif
