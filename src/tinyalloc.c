@@ -33,10 +33,11 @@ struct chunk {
 	char mem[0];
 };
 
-#define chk_next(chk)      slist_next(&(chk)->link)
+#define chk_to_node(chk)   (&(chk)->link)
+#define chk_from_node(n)   slist_entry(n, struct chunk, link)
+#define chk_next(chk)      slist_next(chk_to_node(chk))
 #define chk_root(root)     (&(root)->chunk_head)
-#define chk_add(chk, root) slist_add(&(chk)->link, chk_root(root))
-#define chk_entry(node)    slist_entry(node, struct chunk, link)
+#define chk_add(chk, root) slist_add(chk_to_node(chk), chk_root(root))
 
 static struct chunk *chk_new(int k)
 {
@@ -112,7 +113,6 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	} else {
 		chk = slist_first_entry(chk_root(root), struct chunk, link);
 	}
-
 	while (true) {
 		if (chk->pos + size <= chk->size) {
 			meta = (struct meta *)(chk->mem + chk->pos);
@@ -122,7 +122,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 		}
 		if (chk_next(chk)) {
 			prev = chk;
-			chk = chk_entry(chk_next(chk));
+			chk = chk_from_node(chk_next(chk));
 		} else {
 			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
 			chk = chk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024);
@@ -132,7 +132,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 			chk_add(chk, root);
 		}
 	}
-	// moving current "chk" at top of the list when prev exists
+	// moves current "chk" to top
 	if (prev) {
 		chk_next(prev) = chk_next(chk);
 		chk_add(chk, root);
@@ -155,7 +155,7 @@ void tinyreset(struct tinyalloc_root *root)
 	struct chunk *chk;
 	struct slist_head *pos;
 	slist_for_each(pos, chk_root(root)) {
-		chk = chk_entry(pos);
+		chk = chk_from_node(pos);
 		int align = ((size_t)chk->mem + sizeof(struct meta)) & (BLK_BASE - 1);
 		if (align)
 			align = BLK_BASE - align;
@@ -172,7 +172,7 @@ void tinydestroy(struct tinyalloc_root *root)
 	struct chunk *chk;
 	struct slist_head *head = chk_root(root);
 	while (slist_first(head)) {
-		chk = chk_entry(slist_pop(head));
+		chk = chk_from_node(slist_pop(head));
 		free(chk);
 	}
 	int i = 0;

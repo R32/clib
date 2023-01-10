@@ -13,7 +13,7 @@
 	#define TINYALLOC_BLK_BASE          8
 #endif
 #ifndef TINYALLOC_FREELIST_MAX
-	#define TINYALLOC_FREELIST_MAX      9
+	#define TINYALLOC_FREELIST_MAX      16
 #endif
 struct tinyalloc_root {
 	struct slist_head chunk_head;

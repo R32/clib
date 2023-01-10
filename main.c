@@ -170,10 +170,15 @@ int ptr_intersect(const void* aa, const void* bb) {
 	assert(IS_ALIGNED(a));
 	assert(IS_ALIGNED(b));
 
-	const int MAX = 1028; // ALIGN__8(1024 + sizeof(struct meta)) - sizeof(struct meta);
+	assert(PTRSIZE(a) > BLK_BASE);
+	assert(PTRSIZE(b) > BLK_BASE);
 
-	assert(PTRSIZE(a) > 0 && PTRSIZE(a) <= MAX);
-	assert(PTRSIZE(b) > 0 && PTRSIZE(b) <= MAX);
+	for (int i = 0; i < PTRSIZE(a); i++) {
+		assert(a[i] == 'X');
+	}
+	for (int i = 0; i < PTRSIZE(b); i++) {
+		assert(b[i] == 'X');
+	}
 
 	if (a > b) {
 		assert(b + PTRSIZE(b) < a);
@@ -184,20 +189,34 @@ int ptr_intersect(const void* aa, const void* bb) {
 	}
 	return a - b;
 }
+void *__alloc_x(struct tinyalloc_root *root, int size) {
+	char *ptr = tinyalloc(root, size);
+	if (ptr == NULL)
+		assert(0);
+	size = PTRSIZE(ptr);
+	for (int i = 0; i < size; i++)
+		ptr[i] = 'X';
+	return ptr;
+}
 void t_tinyalloc() {
 	srand((uint32_t)time(NULL));
 	struct tinyalloc_root root = {NULL};
 
 	// randomly alloc and free
 	#define RAND()        (rand() & (BLKMAX - 1))
-	#define __alloc(size) tinyalloc(&root, size)
+	#define __alloc(size) __alloc_x(&root, size)
 	#define __free(ptr)   tinyfree(&root, ptr)
 	#define ASIZE         (960)
 	#define HALFASIZE     (ASIZE >> 1)
+	#define KB(k)         (1024 * (k))
 	char* aptr[ASIZE];
+	int big[] = {KB(88), KB(101), KB(196), KB(99), KB(256), KB(201), KB(512), KB(333), KB(222)};
 	int i;
-	for (i = 0; i < ASIZE; i++) {
+	for (i = 0; i < ASIZE - ARRAYSIZE(big); i++) {
 		aptr[i] = __alloc(RAND());
+	}
+	for (int j = 0; j < ARRAYSIZE(big); j++) {
+		aptr[i + j] = __alloc(big[j]);
 	}
 
 	shuffle((void**)aptr, ASIZE);
@@ -217,24 +236,18 @@ void t_tinyalloc() {
 
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
-	shuffle((void**)aptr, ASIZE);
 
-	for(i = 0; i < ASIZE; i++) {
-		__free(aptr[i]);
-	}
-	char* bigptr = __alloc(1024 * 88);
-	assert(bigptr);
-	__free(bigptr);
-
+	tinyreset(&root);
 	tinydestroy(&root);
 	assert(slist_empty(&root.chunk_head));
 }
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();
 	t_rbtree();
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 10; i++) {
 		t_tinyalloc();
 	}
 	printf("done!\n");
