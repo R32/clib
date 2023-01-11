@@ -106,7 +106,7 @@ static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 			curr = FREE_NEXT(curr);
 			continue;
 		}
-		if (full >= size + (BLK_BASE * ARRAYSIZE(root->freelist))) { // Do Splits
+		if (full >= size + (BLK_BASE * (int)ARRAYSIZE(root->freelist))) { // Do Splits
 			struct meta *next = (struct meta *)((char *)curr + size);
 			META_DATASIZE(curr) = size - sizeof(struct meta);
 			META_DATASIZE(next) = full - sizeof(struct meta) - size;
