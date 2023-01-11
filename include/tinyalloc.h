@@ -41,14 +41,14 @@ void tinyreset(struct tinyalloc_root *root);
 
 void tinydestroy(struct tinyalloc_root *root);
 
-// bump alloctor
+// bump allocator
 void *bumpalloc(struct bumpalloc_root *bump, int size);
 
 void bumpreset(struct bumpalloc_root *bump);
 
 void bumpdestroy(struct bumpalloc_root *bump);
 
-// fixed alloctor
+// fixed allocator
 void fixedalloc_init(struct fixedalloc_root *fixed, int size);
 
 void *fixedalloc(struct fixedalloc_root *fixed);

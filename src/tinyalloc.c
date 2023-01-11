@@ -135,7 +135,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 		return META_DATAPTR(meta);
 
 	struct chunk *chk = chunk_pickup(chk_root(root), size, sizeof(struct meta));
-	if (chk == NULL)
+	if (!chk)
 		return NULL;
 	meta = (struct meta *)chk_dataptr(chk);
 	META_DATASIZE(meta) = size - sizeof(struct meta);
@@ -193,7 +193,7 @@ void tinydestroy(struct tinyalloc_root *root)
 
 /**
 *
-* bump alloctor
+* bump allocator
 *
 */
 void *bumpalloc(struct bumpalloc_root *bump, int size)
@@ -204,6 +204,8 @@ void *bumpalloc(struct bumpalloc_root *bump, int size)
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
 	struct chunk *chk = chunk_pickup(chk_root(bump), size, 0);
+	if (!chk)
+		return NULL;
 	char *ptr = chk_dataptr(chk);
 	chk->pos += size;
 	return ptr;
@@ -222,7 +224,7 @@ void bumpdestroy(struct bumpalloc_root *bump)
 
 /**
 *
-* fixed alloctor
+* fixed allocator
 *
 */
 #define FIXED_NEXT(ptr)   (*(void **)(ptr))
@@ -249,6 +251,8 @@ void *fixedalloc(struct fixedalloc_root *fixed)
 	}
 	const int size = fixed->size;
 	struct chunk *chk = chunk_pickup(chk_root(fixed), size, 0);
+	if (!chk)
+		return NULL;
 	result = chk_dataptr(chk);
 	chk->pos += size;
 
