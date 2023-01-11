@@ -73,12 +73,12 @@ static struct chunk *chunk_pickup(struct slist_head *head, int size, int metasiz
 		chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
 		chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, metasize);
 		if (chk)
-			slist_add(head, chk_to_node(chk));
+			slist_add(chk_to_node(chk), head);
 		return chk;
 	}
 	if (prev) { // moves current "chk" to top
 		chk_next(prev) = chk_next(chk);
-		slist_add(head, chk_to_node(chk));
+		slist_add(chk_to_node(chk), head);
 	}
 	return chk;
 }
