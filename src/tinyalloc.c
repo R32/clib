@@ -51,6 +51,39 @@ static struct chunk *chunk_new(int k, int metasize)
 	return chk;
 }
 
+static struct chunk *chunk_pickup(struct slist_head *head, int size, int metasize)
+{
+	int chksize;
+	struct chunk *chk;
+	struct chunk *prev = NULL;
+	if (slist_first(head)) {
+		chk = chk_from_node(slist_first(head));
+	} else {
+		goto Chunknew;
+	}
+	while (true) {
+		if (chk->pos + size <= chk->size)
+			break;
+
+		if (chk_next(chk)) {
+			prev = chk;
+			chk = chk_from_node(chk_next(chk));
+			continue;
+		}
+	Chunknew:
+		chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
+		chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, metasize);
+		if (chk)
+			slist_add(head, chk_to_node(chk));
+		return chk;
+	}
+	if (prev) { // moves current "chk" to top
+		chk_next(prev) = chk_next(chk);
+		slist_add(head, chk_to_node(chk));
+	}
+	return chk;
+}
+
 static inline int freelist_index(unsigned int size)
 {
 	int i = size / BLK_BASE - 1;
@@ -101,40 +134,12 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	if (meta)
 		return META_DATAPTR(meta);
 
-	struct chunk *chk;
-	struct chunk *prev = NULL;
-	if (slist_empty(chk_root(root))) {
-		chk = chunk_new(CHK_SIZE, sizeof(struct meta));
-		if (chk == NULL)
-			return NULL;
-		chk_add(chk, root);
-	} else {
-		chk = slist_first_entry(chk_root(root), struct chunk, link);
-	}
-	while (true) {
-		if (chk->pos + size <= chk->size) {
-			meta = (struct meta *)(chk->mem + chk->pos);
-			META_DATASIZE(meta) = size - sizeof(struct meta);
-			chk->pos += size;
-			break;
-		}
-		if (chk_next(chk)) {
-			prev = chk;
-			chk = chk_from_node(chk_next(chk));
-		} else {
-			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
-			chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, sizeof(struct meta));
-			if (chk == NULL)
-				return NULL;
-			prev = NULL;
-			chk_add(chk, root);
-		}
-	}
-	// moves current "chk" to top
-	if (prev) {
-		chk_next(prev) = chk_next(chk);
-		chk_add(chk, root);
-	}
+	struct chunk *chk = chunk_pickup(chk_root(root), size, sizeof(struct meta));
+	if (chk == NULL)
+		return NULL;
+	meta = (struct meta *)(chk->mem + chk->pos);
+	META_DATASIZE(meta) = size - sizeof(struct meta);
+	chk->pos += size;
 	return META_DATAPTR(meta);
 }
 
@@ -198,39 +203,9 @@ void *bumpalloc(struct bumpalloc_root *bump, int size)
 	} else {
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
-	struct chunk *chk;
-	struct chunk *prev = NULL;
-	if (slist_empty(chk_root(bump))) {
-		chk = chunk_new(CHK_SIZE, 0);
-		if (chk == NULL)
-			return NULL;
-		chk_add(chk, bump);
-	} else {
-		chk = slist_first_entry(chk_root(bump), struct chunk, link);
-	}
-	char *ptr = NULL;
-	while (true) {
-		if (chk->pos + size <= chk->size) {
-			ptr = chk->mem + chk->pos;
-			chk->pos += size;
-			break;
-		}
-		if (chk_next(chk)) {
-			prev = chk;
-			chk = chk_from_node(chk_next(chk));
-		} else {
-			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
-			chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, 0);
-			if (chk == NULL)
-				return NULL;
-			prev = NULL;
-			chk_add(chk, bump);
-		}
-	}
-	if (prev) {
-		chk_next(prev) = chk_next(chk);
-		chk_add(chk, bump);
-	}
+	struct chunk *chk = chunk_pickup(chk_root(bump), size, 0);
+	char *ptr = chk->mem + chk->pos;
+	chk->pos += size;
 	return ptr;
 }
 
