@@ -37,7 +37,6 @@ struct chunk {
 #define chk_from_node(n)   slist_entry(n, struct chunk, link)
 #define chk_next(chk)      slist_next(chk_to_node(chk))
 #define chk_root(root)     (&(root)->chunk_head)
-#define chk_add(chk, root) slist_add(chk_to_node(chk), chk_root(root))
 
 static struct chunk *chunk_new(int k, int metasize)
 {
