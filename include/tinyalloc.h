@@ -25,6 +25,12 @@ struct bumpalloc_root {
 	struct slist_head chunk_head;
 };
 
+struct fixedalloc_root {
+	struct slist_head chunk_head;
+	void *freelist[1];
+	int size;
+};
+
 C_FUNCTION_BEGIN
 
 void tinyfree(struct tinyalloc_root *root, void *ptr);
@@ -41,6 +47,17 @@ void *bumpalloc(struct bumpalloc_root *bump, int size);
 void bumpreset(struct bumpalloc_root *bump);
 
 void bumpdestroy(struct bumpalloc_root *bump);
+
+// fixed alloctor
+void fixedalloc_init(struct fixedalloc_root *fixed, int size);
+
+void *fixedalloc(struct fixedalloc_root *fixed);
+
+void fixedfree(struct fixedalloc_root *fixed, void *ptr);
+
+void fixedreset(struct fixedalloc_root *fixed);
+
+void fixeddestroy(struct fixedalloc_root *fixed);
 
 C_FUNCTION_END
 #endif

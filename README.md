@@ -5,6 +5,7 @@ clib
 
   * tinyalloc : The requested memory block can be freed individually.
   * bumpalloc : The requested memory block cannot be freed individually, you can only call `bumpreset/bumpdestroy` to free all blocks at once
+  * fixedalloc :
 
 - `slist.h`: Singly Linked List.
 

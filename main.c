@@ -218,6 +218,7 @@ void t_tinyalloc() {
 	for (int j = 0; j < ARRAYSIZE(big); j++) {
 		aptr[i + j] = __alloc(big[j]);
 	}
+	assert(slist_len(&root.chunk_head) > 0);
 
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
@@ -257,7 +258,6 @@ int bump_intersect(const void* aa, const void* bb)
 	}
 	return a - b;
 }
-
 void *__alloc_y(struct bumpalloc_root *bump, int size)
 {
 	if (size < BLK_BASE) {
@@ -288,6 +288,8 @@ void t_bumpalloc()
 	for (int j = 0; j < ARRAYSIZE(big); j++) {
 		aptr[i + j] = __alloc(big[j]);
 	}
+	assert(slist_len(&bump.chunk_head) > 0);
+
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), bump_intersect);
 
@@ -302,14 +304,60 @@ void t_bumpalloc()
 	assert(slist_empty(&bump.chunk_head));
 }
 
+int fixed_intersect(const void* aa, const void* bb)
+{
+	char* a = *(char**)aa;
+	char* b = *(char**)bb;
+	assert(IS_ALIGNED(a));
+	assert(IS_ALIGNED(b));
+	if (a > b) {
+		assert(b + 512 <= a);
+	} else if (a < b) {
+		assert(a + 512 <= b);
+	} else {
+		assert(0);
+	}
+	return a - b;
+}
+void t_fixedalloc()
+{
+	#define ASIZE         (960)
+	struct fixedalloc_root fixed;
+	fixedalloc_init(&fixed, 512);
+	char* aptr[ASIZE];
+	for (int i = 0; i < ASIZE; i++) {
+		aptr[i] = fixedalloc(&fixed);
+	}
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
+
+	int len = slist_len(&fixed.chunk_head);
+	for (int i = 0; i < ASIZE / 2; i++) fixedfree(&fixed, aptr[i]);
+	for (int i = 0; i < ASIZE / 2; i++) aptr[i] = fixedalloc(&fixed);
+	assert(len > 0 && len == slist_len(&fixed.chunk_head));
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
+
+	fixedreset(&fixed);
+	for (int i = 0; i < ASIZE; i++) {
+		aptr[i] = fixedalloc(&fixed);
+	}
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
+
+	fixeddestroy(&fixed);
+	assert(slist_empty(&fixed.chunk_head));
+}
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();
 	t_rbtree();
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();
+		t_fixedalloc();
 	}
 	printf("done!\n");
 	return 0;
