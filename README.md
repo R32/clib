@@ -1,7 +1,10 @@
 clib
 --------
 
-- `tinyalloc`: the **first-class heaps** that can be destroyed at once instead of deallocating each object separately.
+- `tinyalloc`: Releases all requested memory at once instead of releasing each object separately.
+
+  * tinyalloc : The requested memory block can be freed individually.
+  * bumpalloc : The requested memory block cannot be freed individually, you can only call `bumpreset/bumpdestroy` to free all blocks at once
 
 - `slist.h`: Singly Linked List.
 

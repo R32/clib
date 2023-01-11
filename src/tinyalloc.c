@@ -39,17 +39,15 @@ struct chunk {
 #define chk_root(root)     (&(root)->chunk_head)
 #define chk_add(chk, root) slist_add(chk_to_node(chk), chk_root(root))
 
-static struct chunk *chk_new(int k)
+static struct chunk *chunk_new(int k, int metasize)
 {
 	struct chunk *chk = malloc(N1024 * k);
 	if (!chk)
 		return NULL;
 	chk->size = N1024 * k - sizeof(struct chunk);
 	chk->link.next = NULL;
-	int align = ((size_t)chk->mem + sizeof(struct meta)) & (BLK_BASE - 1);
-	if (align)
-		align = BLK_BASE - align;
-	chk->pos = align;
+	int align = ((size_t)chk->mem + metasize) & (BLK_BASE - 1);
+	chk->pos = align ? BLK_BASE - align : 0;
 	return chk;
 }
 
@@ -106,7 +104,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	struct chunk *chk;
 	struct chunk *prev = NULL;
 	if (slist_empty(chk_root(root))) {
-		chk = chk_new(CHK_SIZE);
+		chk = chunk_new(CHK_SIZE, sizeof(struct meta));
 		if (chk == NULL)
 			return NULL;
 		chk_add(chk, root);
@@ -125,7 +123,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 			chk = chk_from_node(chk_next(chk));
 		} else {
 			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
-			chk = chk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024);
+			chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, sizeof(struct meta));
 			if (chk == NULL)
 				return NULL;
 			prev = NULL;
@@ -150,33 +148,98 @@ void tinyfree(struct tinyalloc_root *root, void *ptr)
 	FREE_ROOT(root, i) = meta;
 }
 
-void tinyreset(struct tinyalloc_root *root)
+static void chunks_reset(struct slist_head *head, int metasize)
 {
 	struct chunk *chk;
-	struct slist_head *pos;
-	slist_for_each(pos, chk_root(root)) {
-		chk = chk_from_node(pos);
-		int align = ((size_t)chk->mem + sizeof(struct meta)) & (BLK_BASE - 1);
-		if (align)
-			align = BLK_BASE - align;
-		chk->pos = align;
-	}
-	int i = 0;
-	while (i < (FREELIST_MAX + 1)) {
-		FREE_ROOT(root, i++) = NULL;
+	struct slist_head *node;
+	slist_for_each(node, head) {
+		chk = chk_from_node(node);
+		int align = ((size_t)chk->mem + metasize) & (BLK_BASE - 1);
+		chk->pos = align ? BLK_BASE - align : 0;
 	}
 }
 
-void tinydestroy(struct tinyalloc_root *root)
+static void chunks_destroy(struct slist_head *head)
 {
 	struct chunk *chk;
-	struct slist_head *head = chk_root(root);
 	while (slist_first(head)) {
 		chk = chk_from_node(slist_pop(head));
 		free(chk);
 	}
-	int i = 0;
-	while (i < (FREELIST_MAX + 1)) {
-		FREE_ROOT(root, i++) = NULL;
+}
+
+static void freelist_reset(void **freelist, int max)
+{
+	for (int i = 0; i < max; i++)
+		freelist[i] = NULL;
+}
+
+void tinyreset(struct tinyalloc_root *root)
+{
+	chunks_reset(chk_root(root), sizeof(struct meta));
+	freelist_reset(root->freelist, FREELIST_MAX + 1);
+}
+
+void tinydestroy(struct tinyalloc_root *root)
+{
+	chunks_destroy(chk_root(root));
+	freelist_reset(root->freelist, FREELIST_MAX + 1);
+}
+
+/**
+*
+* bump alloctor
+*
+*/
+void *bumpalloc(struct bumpalloc_root *bump, int size)
+{
+	if (size < BLK_BASE) {
+		size = BLK_BASE;
+	} else {
+		size = ALIGN_POW2(size, BLK_BASE);
 	}
+	struct chunk *chk;
+	struct chunk *prev = NULL;
+	if (slist_empty(chk_root(bump))) {
+		chk = chunk_new(CHK_SIZE, 0);
+		if (chk == NULL)
+			return NULL;
+		chk_add(chk, bump);
+	} else {
+		chk = slist_first_entry(chk_root(bump), struct chunk, link);
+	}
+	char *ptr = NULL;
+	while (true) {
+		if (chk->pos + size <= chk->size) {
+			ptr = chk->mem + chk->pos;
+			chk->pos += size;
+			break;
+		}
+		if (chk_next(chk)) {
+			prev = chk;
+			chk = chk_from_node(chk_next(chk));
+		} else {
+			int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
+			chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, 0);
+			if (chk == NULL)
+				return NULL;
+			prev = NULL;
+			chk_add(chk, bump);
+		}
+	}
+	if (prev) {
+		chk_next(prev) = chk_next(chk);
+		chk_add(chk, bump);
+	}
+	return ptr;
+}
+
+void bumpreset(struct bumpalloc_root *bump)
+{
+	chunks_reset(chk_root(bump), 0);
+}
+
+void bumpdestroy(struct bumpalloc_root *bump)
+{
+	chunks_destroy(chk_root(bump));
 }

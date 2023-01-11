@@ -242,13 +242,74 @@ void t_tinyalloc() {
 	assert(slist_empty(&root.chunk_head));
 }
 
+int bump_intersect(const void* aa, const void* bb)
+{
+	char* a = *(char**)aa;
+	char* b = *(char**)bb;
+	assert(IS_ALIGNED(a));
+	assert(IS_ALIGNED(b));
+	if (a > b) {
+		assert(b + (*(int*)b) <= a);
+	} else if (a < b) {
+		assert(a + (*(int*)a) <= b);
+	} else {
+		assert(0);
+	}
+	return a - b;
+}
+
+void *__alloc_y(struct bumpalloc_root *bump, int size)
+{
+	if (size < BLK_BASE) {
+		size = BLK_BASE;
+	} else {
+		size = ALIGN_POW2(size, BLK_BASE);
+	}
+	char *ptr = bumpalloc(bump, size);
+	if (ptr == NULL)
+		assert(0);
+	*(int*)ptr = size; // write size to ptr
+	return ptr;
+}
+void t_bumpalloc()
+{
+	srand((uint32_t)time(NULL));
+	struct bumpalloc_root bump = { NULL };
+	#define RAND()        (rand() & (BLKMAX - 1))
+	#undef __alloc
+	#define __alloc(size) __alloc_y(&bump, size)
+	#define ASIZE         (960)
+	char* aptr[ASIZE];
+	int big[] = { KB(88), KB(101), KB(196), KB(99), KB(256), KB(201), KB(512), KB(333), KB(222) };
+	int i;
+	for (i = 0; i < ASIZE - ARRAYSIZE(big); i++) {
+		aptr[i] = __alloc(RAND());
+	}
+	for (int j = 0; j < ARRAYSIZE(big); j++) {
+		aptr[i + j] = __alloc(big[j]);
+	}
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), bump_intersect);
+
+	bumpreset(&bump);
+	for (i = 0; i < ASIZE; i++) {
+		aptr[i] = __alloc(RAND());
+	}
+	shuffle((void**)aptr, ASIZE);
+	qsort(aptr, ASIZE, sizeof(aptr[0]), bump_intersect);
+
+	bumpdestroy(&bump);
+	assert(slist_empty(&bump.chunk_head));
+}
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();
 	t_rbtree();
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 9; i++) {
 		t_tinyalloc();
+		t_bumpalloc();
 	}
 	printf("done!\n");
 	return 0;
