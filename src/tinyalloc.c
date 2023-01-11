@@ -242,7 +242,7 @@ void fixedalloc_init(struct fixedalloc_root *fixed, int size)
 
 void *fixedalloc(struct fixedalloc_root *fixed)
 {
-	void *result = FREE_ROOT(fixed, 0);
+	void *result = FIXED_HEAD(fixed);
 	if (result) {
 		FIXED_HEAD(fixed) = FIXED_NEXT(result);
 		return result;
