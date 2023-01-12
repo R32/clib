@@ -9,6 +9,8 @@ clib
 
 - `strbuf`: string buffer
 
+  * `wcsbuf` : The wchar_t version of strbuf
+
 - `slist.h`: Singly Linked List.
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs

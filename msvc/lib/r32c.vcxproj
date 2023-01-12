@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\src\strbuf.c" />
     <ClCompile Include="..\..\src\tinyalloc.c" />
     <ClCompile Include="..\..\src\ucs2.c" />
+    <ClCompile Include="..\..\src\wcsbuf.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

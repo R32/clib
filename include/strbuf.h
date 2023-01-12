@@ -11,7 +11,7 @@ struct strbuf {
 	void *buffer;
 };
 
-#define strbuf_size(buf) ((buf)->length)
+#define strbuf_length(buf) ((buf)->length)
 
 C_FUNCTION_BEGIN
 

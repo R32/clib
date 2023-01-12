@@ -26,7 +26,7 @@ struct chunk {
 
 void strbuf_init(struct strbuf *buf)
 {
-	buf->csize = 64;
+	buf->csize = 128;
 	buf->length = 0;
 	buf->buffer = NULL;
 }

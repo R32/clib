@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -11,6 +11,7 @@
 #include "ucs2.h"
 #include "tinyalloc.h"
 #include "strbuf.h"
+#include "wcsbuf.h"
 
 struct blk_s {
 	int n;
@@ -354,7 +355,7 @@ void t_strbuf()
 {
 	struct strbuf buf;
 	strbuf_init(&buf);
-	#define TEXT "the quick brown fox jumped over the lazy dog\n"
+#	define TEXT "the quick brown fox jumped over the lazy dog\n"
 	for (int i = 0; i < 3; i++) {
 		strbuf_append_char(&buf, 'A' + i);
 		strbuf_append_int(&buf, 101 + i);
@@ -380,16 +381,68 @@ void t_strbuf()
 	strbuf_to_string(&buf, ptr);
 	//printf("length: %d\n%s\n", buf.length, ptr);
 	assert(strlen(ptr) == strlen(result) && strcmp(ptr, result) == 0);
-#if 1
+#	if 1
 	FILE *stream = fopen("test.txt", "w+b");
 	assert(strbuf_to_file(&buf, stream) == buf.length);
 	fseek(stream, 0, SEEK_SET);
 	assert(fread(ptr, sizeof(char), buf.length, stream) == buf.length);
 	fclose(stream);
 	assert(strlen(ptr) == strlen(result) && strcmp(ptr, result) == 0);
-#endif
+#	endif
 	free(ptr);
 	strbuf_release(&buf);
+}
+
+void t_wcsbuf()
+{
+	struct wcsbuf buf;
+	wcsbuf_init(&buf);
+#	undef TEXT
+#	define TEXT L"the quick brown fox jumped over the lazy dog\n"
+	for (int i = 0; i < 3; i++) {
+		wcsbuf_append_char(&buf, 'A' + i);
+		wcsbuf_append_int(&buf, 101 + i);
+		wcsbuf_append_char(&buf, '\n');
+		wcsbuf_append_string(&buf, TEXT, wcslen(TEXT));
+	}
+	wcsbuf_append_double(&buf, 3.1415926535897984626, -1);
+	wcsbuf_append_char(&buf, '\n');
+	wcsbuf_append_float(&buf, 3.1415926535f, -1);
+	wcsbuf_append_char(&buf, '\n');
+	wcsbuf_append_double(&buf, 3.14, -1);
+	wcsbuf_append_char(&buf, '\n');
+	wcsbuf_append_float(&buf, 3.f, -1);
+	wcsbuf_append_char(&buf, '\n');
+
+#	define HANG_ZI L"中文汉字\n"
+	wcsbuf_append_string(&buf, HANG_ZI, wcslen(HANG_ZI));
+	wchar_t *result = L"A101\n" TEXT L"B102\n" TEXT L"C103\n" TEXT
+		L"3.1415926535897984\n"
+		L"3.141592741\n"
+		L"3.14\n"
+		L"3.00\n"
+		HANG_ZI
+	;
+	wchar_t *ptr = malloc((buf.length + 1) * sizeof(wchar_t));
+	wcsbuf_to_string(&buf, ptr);
+	//printf("length: %d\n%ls\n", buf.length, ptr);
+	assert(wcslen(ptr) == wcslen(result) && wcscmp(ptr, result) == 0);
+#	if 1
+	FILE *stream = fopen("wcstest.txt", "w+b");
+	assert(wcsbuf_to_file_utf8(&buf, stream) == buf.length);
+	int bsize = ftell(stream);
+	char *bptr = malloc(bsize + 1);
+	fseek(stream, 0, SEEK_SET);
+	assert(fread(bptr, sizeof(char), bsize, stream) == bsize);
+	bptr[bsize] = 0;
+	assert(utf8towcs(NULL, bptr) == buf.length);
+	assert(utf8towcs(ptr, bptr) == buf.length);
+	assert(wcslen(ptr) == wcslen(result) && wcscmp(ptr, result) == 0);
+	free(bptr);
+	fclose(stream);
+#	endif
+	free(ptr);
+	wcsbuf_release(&buf);
 }
 
 int main(int argc, char** args) {
@@ -398,6 +451,7 @@ int main(int argc, char** args) {
 	t_slist();
 	t_rbtree();
 	t_strbuf();
+	t_wcsbuf();
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();
