@@ -2,8 +2,8 @@
 * SPDX-License-Identifier: GPL-2.0
 */
 
-#ifndef R32_TINYALLOC_H
-#define R32_TINYALLOC_H
+#ifndef R_TINYALLOC_H
+#define R_TINYALLOC_H
 #include "rclibs.h"
 
 #ifndef TINYALLOC_CHK_SIZE

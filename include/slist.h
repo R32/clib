@@ -2,8 +2,8 @@
 * SPDX-License-Identifier: GPL-2.0
 */
 
-#ifndef R32_SLIST_H
-#define R32_SLIST_H
+#ifndef R_SLIST_H
+#define R_SLIST_H
 #include "rclibs.h"
 
 /**

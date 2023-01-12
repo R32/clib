@@ -2,8 +2,8 @@
 * SPDX-License-Identifier: GPL-2.0
 */
 
-#ifndef R32_UCS2_H
-#define R32_UCS2_H
+#ifndef R_UCS2_H
+#define R_UCS2_H
 
 #include "rclibs.h"
 C_FUNCTION_BEGIN
