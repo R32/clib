@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\rbtree.c" />
     <ClCompile Include="..\..\src\slist.c" />
+    <ClCompile Include="..\..\src\strbuf.c" />
     <ClCompile Include="..\..\src\tinyalloc.c" />
     <ClCompile Include="..\..\src\ucs2.c" />
   </ItemGroup>

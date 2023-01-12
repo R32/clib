@@ -10,6 +10,7 @@
 #include "rbtree_augmented.h"
 #include "ucs2.h"
 #include "tinyalloc.h"
+#include "strbuf.h"
 
 struct blk_s {
 	int n;
@@ -349,11 +350,54 @@ void t_fixedalloc()
 	assert(slist_empty(&fixed.chunk_head));
 }
 
+void t_strbuf()
+{
+	struct strbuf buf;
+	strbuf_init(&buf);
+	#define TEXT "the quick brown fox jumped over the lazy dog\n"
+	for (int i = 0; i < 3; i++) {
+		strbuf_append_char(&buf, 'A' + i);
+		strbuf_append_int(&buf, 101 + i);
+		strbuf_append_char(&buf, '\n');
+		strbuf_append_string(&buf, TEXT, strlen(TEXT));
+	}
+	strbuf_append_double(&buf, 3.1415926535897984626, -1);
+	strbuf_append_char(&buf, '\n');
+	strbuf_append_float(&buf, 3.1415926535f, -1);
+	strbuf_append_char(&buf, '\n');
+	strbuf_append_double(&buf, 3.14, -1);
+	strbuf_append_char(&buf, '\n');
+	strbuf_append_float(&buf, 3.f, -1);
+	strbuf_append_char(&buf, '\n');
+
+	char *result = "A101\n" TEXT "B102\n" TEXT "C103\n" TEXT
+		"3.1415926535897984\n"
+		"3.141592741\n"
+		"3.14\n"
+		"3.00\n"
+	;
+	char *ptr = malloc(buf.length + 1);
+	strbuf_to_string(&buf, ptr);
+	//printf("length: %d\n%s\n", buf.length, ptr);
+	assert(strlen(ptr) == strlen(result) && strcmp(ptr, result) == 0);
+#if 1
+	FILE *stream = fopen("test.txt", "w+b");
+	assert(strbuf_to_file(&buf, stream) == buf.length);
+	fseek(stream, 0, SEEK_SET);
+	assert(fread(ptr, sizeof(char), buf.length, stream) == buf.length);
+	fclose(stream);
+	assert(strlen(ptr) == strlen(result) && strcmp(ptr, result) == 0);
+#endif
+	free(ptr);
+	strbuf_release(&buf);
+}
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
 	t_slist();
 	t_rbtree();
+	t_strbuf();
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();

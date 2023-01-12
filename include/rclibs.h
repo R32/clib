@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#if defined(_MSC_VER) && !defined(HL_LLVM)
+#if !defined(_WIN64)
+#	pragma warning(disable:4996) // remove deprecated C API usage warnings
+#endif
+#endif
+
 #ifndef C_FUNCTION_BEGIN
 #   ifdef __cplusplus
 #       define C_FUNCTION_BEGIN extern "C" {

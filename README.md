@@ -7,6 +7,8 @@ clib
   * bumpalloc : The requested memory block cannot be freed individually, you can only call `bumpreset/bumpdestroy` to free all blocks at once
   * fixedalloc :
 
+- `strbuf`: string buffer
+
 - `slist.h`: Singly Linked List.
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs
