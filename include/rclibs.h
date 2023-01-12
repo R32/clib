@@ -2,8 +2,8 @@
 * SPDX-License-Identifier: GPL-2.0
 */
 
-#ifndef COMM_H
-#define COMM_H
+#ifndef R_CLIBS_H
+#define R_CLIBS_H
 
 #include <locale.h>
 #include <wchar.h>

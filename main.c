@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
-#include "comm.h"
+#include "rclibs.h"
 #include "slist.h"
 #include "circ_buf.h"
 #include "list.h"

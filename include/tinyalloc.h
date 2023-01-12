@@ -4,7 +4,7 @@
 
 #ifndef R32_TINYALLOC_H
 #define R32_TINYALLOC_H
-#include "comm.h"
+#include "rclibs.h"
 
 #ifndef TINYALLOC_CHK_SIZE
 	#define TINYALLOC_CHK_SIZE          64

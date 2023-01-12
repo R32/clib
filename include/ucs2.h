@@ -5,7 +5,7 @@
 #ifndef R32_UCS2_H
 #define R32_UCS2_H
 
-#include "comm.h"
+#include "rclibs.h"
 C_FUNCTION_BEGIN
 /*
 NOTE:

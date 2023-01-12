@@ -4,7 +4,7 @@
 
 #ifndef R32_SLIST_H
 #define R32_SLIST_H
-#include "comm.h"
+#include "rclibs.h"
 
 /**
 * +------+      +------+       +------+       +------+

@@ -2,7 +2,7 @@
 #ifndef __TOOLS_LINUX_LIST_H
 #define __TOOLS_LINUX_LIST_H
 
-#include "comm.h"
+#include "rclibs.h"
 C_FUNCTION_BEGIN
 
 /*
