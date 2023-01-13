@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tinyalloc.h"
-#include "slist.h"
 
 #define BLK_BASE           TINYALLOC_BLK_BASE
 #define FREELIST_MAX       TINYALLOC_FREELIST_MAX
@@ -27,18 +26,22 @@ struct chunk {
 	int pos;
 	int size; // sizeof(chunk->mem)
 	union {
-		struct slist_head link;
+		struct chunk *next;
 		double __x; // align(struct chunk) to 8bytes if compiler is 32bit
 	};
 	char mem[0];
 };
 
 #define the_base(ator)     (&ator->base)
-#define chk_to_node(chk)   (&(chk)->link)
-#define chk_from_node(n)   slist_entry(n, struct chunk, link)
-#define chk_next(chk)      slist_next(chk_to_node(chk))
-#define chk_head(root)     (&(root)->chunk_head)
+#define chk_next(chk)      ((chk)->next)
+#define chk_head(root)     ((root)->chunk_head)
 #define chk_dataptr(chk)   ((chk)->mem + (chk)->pos)
+
+static inline void chunk_add(struct chunk *chk, struct allocator_base *base)
+{
+	chk_next(chk) = chk_head(base);
+	chk_head(base) = chk;
+}
 
 static struct chunk *chunk_new(int k, int metasize)
 {
@@ -46,7 +49,7 @@ static struct chunk *chunk_new(int k, int metasize)
 	if (!chk)
 		return NULL;
 	chk->size = N1024 * k - sizeof(struct chunk);
-	chk->link.next = NULL;
+	chk_next(chk) = NULL;
 	int align = ((size_t)chk->mem + metasize) & (BLK_BASE - 1);
 	chk->pos = align ? BLK_BASE - align : 0;
 	return chk;
@@ -54,34 +57,23 @@ static struct chunk *chunk_new(int k, int metasize)
 
 static struct chunk *chunk_pickup(struct allocator_base *base, int size)
 {
-	int chksize;
-	struct chunk *chk;
 	struct chunk *prev = NULL;
-	struct slist_head *head = chk_head(base);
-	if (slist_first(head)) {
-		chk = chk_from_node(slist_first(head));
-	} else {
-		goto Chunknew;
-	}
-	while (true) {
+	struct chunk *chk = chk_head(base);
+	while (chk) {
 		if (chk->pos + size <= chk->size)
 			break;
-
-		if (chk_next(chk)) {
-			prev = chk;
-			chk = chk_from_node(chk_next(chk));
-			continue;
-		}
-	Chunknew:
-		chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
+		prev = chk;
+		chk = chk_next(chk);
+	}
+	if (!chk) {
+		int chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
 		chk = chunk_new(chksize / N1024 <= base->chksize ? base->chksize : chksize / N1024, base->metasize);
 		if (chk)
-			slist_add(chk_to_node(chk), head);
-		return chk;
-	}
-	if (prev) { // moves current "chk" to top
+			chunk_add(chk, base);
+	} else if (prev) {
+		// moves current "chk" to top
 		chk_next(prev) = chk_next(chk);
-		slist_add(chk_to_node(chk), head);
+		chunk_add(chk, base);
 	}
 	return chk;
 }
@@ -137,7 +129,7 @@ void tinyalloc_init(struct tinyalloc_root *root, int chksize)
 		chksize = 8;
 	root->chksize = chksize;
 	root->metasize = sizeof(struct meta);
-	INIT_SLIST_HEAD(&root->chunk_head);
+	chk_head(root) = NULL;
 	FREE_RESET(root->freelist);
 }
 
@@ -173,24 +165,24 @@ void tinyfree(struct tinyalloc_root *root, void *ptr)
 
 static void chunks_reset(struct allocator_base *base)
 {
-	struct chunk *chk;
-	struct slist_head *node;
-	struct slist_head *head = chk_head(base);
-	slist_for_each(node, head) {
-		chk = chk_from_node(node);
+	struct chunk *chk = chk_head(base);
+	while (chk) {
 		int align = ((size_t)chk->mem + base->metasize) & (BLK_BASE - 1);
 		chk->pos = align ? BLK_BASE - align : 0;
+		chk = chk_next(chk);
 	}
 }
 
 static void chunks_destroy(struct allocator_base *base)
 {
-	struct chunk *chk;
-	struct slist_head *head = chk_head(base);
-	while (slist_first(head)) {
-		chk = chk_from_node(slist_pop(head));
+	struct chunk *chk = chk_head(base);
+	struct chunk *next;
+	while (chk) {
+		next = chk_next(chk);
 		free(chk);
+		chk = next;
 	}
+	chk_head(base) = NULL;
 }
 
 void tinyreset(struct tinyalloc_root *root)
@@ -216,7 +208,7 @@ void bumpalloc_init(struct bumpalloc_root *bump, int chksize)
 		chksize = 1;
 	bump->chksize = chksize;
 	bump->metasize = 0;
-	INIT_SLIST_HEAD(&bump->chunk_head);
+	chk_head(bump) = NULL;
 }
 
 void *bumpalloc(struct bumpalloc_root *bump, int size)
@@ -266,8 +258,7 @@ void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size)
 		chksize = 1;
 	fixed->chksize = chksize;
 	fixed->metasize = 0;
-
-	INIT_SLIST_HEAD(chk_head(fixed));
+	chk_head(fixed) = NULL;
 	FIXED_HEAD(fixed) = NULL;
 }
 

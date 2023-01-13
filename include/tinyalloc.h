@@ -17,7 +17,7 @@
 struct allocator_base {
 	int chksize; // in KB
 	int metasize;
-	struct slist_head chunk_head;
+	void* chunk_head;
 };
 
 struct tinyalloc_root {
