@@ -7,28 +7,41 @@
 #include "rclibs.h"
 
 #ifndef TINYALLOC_BLK_BASE
-	#define TINYALLOC_BLK_BASE          8
+#	define TINYALLOC_BLK_BASE          8
 #endif
 #ifndef TINYALLOC_FREELIST_MAX
-	#define TINYALLOC_FREELIST_MAX      16
+#	define TINYALLOC_FREELIST_MAX      16
 #endif
 
-struct tinyalloc_root {
+// private
+struct allocator_base {
+	int chksize; // in KB
+	int metasize;
 	struct slist_head chunk_head;
+};
+
+struct tinyalloc_root {
+	union {
+		struct allocator_base base;
+		struct allocator_base;
+	};
 	void *freelist[TINYALLOC_FREELIST_MAX + 1];
-	int chksize;  // in KB
 };
 
 struct bumpalloc_root {
-	struct slist_head chunk_head;
-	int chksize;
+	union {
+		struct allocator_base base;
+		struct allocator_base;
+	};
 };
 
 struct fixedalloc_root {
-	struct slist_head chunk_head;
-	void *freelist[1];
+	union {
+		struct allocator_base base;
+		struct allocator_base;
+	};
 	int size;
-	int chksize;
+	void *freelist[1];
 };
 
 C_FUNCTION_BEGIN

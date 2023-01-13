@@ -19,7 +19,7 @@ struct meta {
 #define META_DATASIZE(m)   ((m)->size)
 #define META_FULLSIZE(m)   ((m)->size + sizeof(struct meta))
 #define FREE_NEXT(m)       (*(void **)(m)->data)
-#define FREE_ROOT(root, i) ((root)->freelist[i])
+#define FREE_HEAD(root, i) ((root)->freelist[i])
 #define FREE_RESET(fl)     (freelist_reset(fl, ARRAYSIZE(fl)))
 #define N1024              1024
 
@@ -33,10 +33,11 @@ struct chunk {
 	char mem[0];
 };
 
+#define the_base(ator)     (&ator->base)
 #define chk_to_node(chk)   (&(chk)->link)
 #define chk_from_node(n)   slist_entry(n, struct chunk, link)
 #define chk_next(chk)      slist_next(chk_to_node(chk))
-#define chk_root(root)     (&(root)->chunk_head)
+#define chk_head(root)     (&(root)->chunk_head)
 #define chk_dataptr(chk)   ((chk)->mem + (chk)->pos)
 
 static struct chunk *chunk_new(int k, int metasize)
@@ -51,11 +52,12 @@ static struct chunk *chunk_new(int k, int metasize)
 	return chk;
 }
 
-static struct chunk *chunk_pickup(struct slist_head *head, int fixed_chksize, int size, int metasize)
+static struct chunk *chunk_pickup(struct allocator_base *base, int size)
 {
 	int chksize;
 	struct chunk *chk;
 	struct chunk *prev = NULL;
+	struct slist_head *head = chk_head(base);
 	if (slist_first(head)) {
 		chk = chk_from_node(slist_first(head));
 	} else {
@@ -72,7 +74,7 @@ static struct chunk *chunk_pickup(struct slist_head *head, int fixed_chksize, in
 		}
 	Chunknew:
 		chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
-		chk = chunk_new(chksize / N1024 <= fixed_chksize ? fixed_chksize : chksize / N1024, metasize);
+		chk = chunk_new(chksize / N1024 <= base->chksize ? base->chksize : chksize / N1024, base->metasize);
 		if (chk)
 			slist_add(chk_to_node(chk), head);
 		return chk;
@@ -99,9 +101,9 @@ static inline int freelist_index(unsigned int size)
 static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 {
 	int i = freelist_index(size);
-	struct meta *curr = FREE_ROOT(root, i);
+	struct meta *curr = FREE_HEAD(root, i);
 	if (curr && i < FREELIST_MAX) {
-		FREE_ROOT(root, i) = FREE_NEXT(curr);
+		FREE_HEAD(root, i) = FREE_NEXT(curr);
 		return curr;
 	}
 	struct meta *prev = NULL;
@@ -122,7 +124,7 @@ static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 		if (prev) {
 			FREE_NEXT(prev) = FREE_NEXT(curr);
 		} else {
-			FREE_ROOT(root, i) = FREE_NEXT(curr);
+			FREE_HEAD(root, i) = FREE_NEXT(curr);
 		}
 		break;
 	}
@@ -134,6 +136,7 @@ void tinyalloc_init(struct tinyalloc_root *root, int chksize)
 	if (chksize < 8)
 		chksize = 8;
 	root->chksize = chksize;
+	root->metasize = sizeof(struct meta);
 	INIT_SLIST_HEAD(&root->chunk_head);
 	FREE_RESET(root->freelist);
 }
@@ -149,7 +152,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	if (meta)
 		return META_DATAPTR(meta);
 
-	struct chunk *chk = chunk_pickup(chk_root(root), root->chksize, size, sizeof(struct meta));
+	struct chunk *chk = chunk_pickup(the_base(root), size);
 	if (!chk)
 		return NULL;
 	meta = (struct meta *)chk_dataptr(chk);
@@ -164,24 +167,26 @@ void tinyfree(struct tinyalloc_root *root, void *ptr)
 		return;
 	struct meta *meta = container_of(ptr, struct meta, data);
 	int i = freelist_index(META_FULLSIZE(meta));
-	FREE_NEXT(meta) = FREE_ROOT(root, i);
-	FREE_ROOT(root, i) = meta;
+	FREE_NEXT(meta) = FREE_HEAD(root, i);
+	FREE_HEAD(root, i) = meta;
 }
 
-static void chunks_reset(struct slist_head *head, int metasize)
+static void chunks_reset(struct allocator_base *base)
 {
 	struct chunk *chk;
 	struct slist_head *node;
+	struct slist_head *head = chk_head(base);
 	slist_for_each(node, head) {
 		chk = chk_from_node(node);
-		int align = ((size_t)chk->mem + metasize) & (BLK_BASE - 1);
+		int align = ((size_t)chk->mem + base->metasize) & (BLK_BASE - 1);
 		chk->pos = align ? BLK_BASE - align : 0;
 	}
 }
 
-static void chunks_destroy(struct slist_head *head)
+static void chunks_destroy(struct allocator_base *base)
 {
 	struct chunk *chk;
+	struct slist_head *head = chk_head(base);
 	while (slist_first(head)) {
 		chk = chk_from_node(slist_pop(head));
 		free(chk);
@@ -190,13 +195,13 @@ static void chunks_destroy(struct slist_head *head)
 
 void tinyreset(struct tinyalloc_root *root)
 {
-	chunks_reset(chk_root(root), sizeof(struct meta));
+	chunks_reset(the_base(root));
 	FREE_RESET(root->freelist);
 }
 
 void tinydestroy(struct tinyalloc_root *root)
 {
-	chunks_destroy(chk_root(root));
+	chunks_destroy(the_base(root));
 	FREE_RESET(root->freelist);
 }
 
@@ -210,6 +215,7 @@ void bumpalloc_init(struct bumpalloc_root *bump, int chksize)
 	if (chksize <= 0)
 		chksize = 1;
 	bump->chksize = chksize;
+	bump->metasize = 0;
 	INIT_SLIST_HEAD(&bump->chunk_head);
 }
 
@@ -220,7 +226,7 @@ void *bumpalloc(struct bumpalloc_root *bump, int size)
 	} else {
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
-	struct chunk *chk = chunk_pickup(chk_root(bump), bump->chksize, size, 0);
+	struct chunk *chk = chunk_pickup(the_base(bump), size);
 	if (!chk)
 		return NULL;
 	char *ptr = chk_dataptr(chk);
@@ -230,12 +236,12 @@ void *bumpalloc(struct bumpalloc_root *bump, int size)
 
 void bumpreset(struct bumpalloc_root *bump)
 {
-	chunks_reset(chk_root(bump), 0);
+	chunks_reset(the_base(bump));
 }
 
 void bumpdestroy(struct bumpalloc_root *bump)
 {
-	chunks_destroy(chk_root(bump));
+	chunks_destroy(the_base(bump));
 }
 
 
@@ -259,8 +265,9 @@ void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size)
 	if (chksize <= 0)
 		chksize = 1;
 	fixed->chksize = chksize;
+	fixed->metasize = 0;
 
-	INIT_SLIST_HEAD(chk_root(fixed));
+	INIT_SLIST_HEAD(chk_head(fixed));
 	FIXED_HEAD(fixed) = NULL;
 }
 
@@ -272,7 +279,7 @@ void *fixedalloc(struct fixedalloc_root *fixed)
 		return result;
 	}
 	const int size = fixed->size;
-	struct chunk *chk = chunk_pickup(chk_root(fixed), fixed->chksize, size, 0);
+	struct chunk *chk = chunk_pickup(the_base(fixed), size);
 	if (!chk)
 		return NULL;
 	result = chk_dataptr(chk);
@@ -301,12 +308,12 @@ void fixedfree(struct fixedalloc_root *fixed, void *ptr)
 
 void fixedreset(struct fixedalloc_root *fixed)
 {
-	chunks_reset(chk_root(fixed), 0);
+	chunks_reset(the_base(fixed));
 	FIXED_HEAD(fixed) = NULL;
 }
 
 void fixeddestroy(struct fixedalloc_root *fixed)
 {
-	chunks_destroy(chk_root(fixed));
+	chunks_destroy(the_base(fixed));
 	FIXED_HEAD(fixed) = NULL;
 }
