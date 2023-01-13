@@ -37,7 +37,7 @@ void strbuf_release(struct strbuf *buf)
 	struct chunk *chk = chk_head(buf);
 	while (chk) {
 		next = chk_next(chk);
-		free(chk);
+		rb_free(chk);
 		chk = next;
 	}
 	strbuf_init(buf);
@@ -48,7 +48,7 @@ static void strbuf_append_new(struct strbuf *buf, char *src, int len)
 	while (buf->length >= (buf->csize << 2))
 		buf->csize <<= 1;
 	int size = len < buf->csize ? buf->csize : len;
-	struct chunk *chk = malloc(sizeof(struct chunk) + size);
+	struct chunk *chk = rb_malloc(sizeof(struct chunk) + size);
 	if (!chk) {
 		// TODO
 	}

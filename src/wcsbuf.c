@@ -37,7 +37,7 @@ void wcsbuf_release(struct wcsbuf *buf)
 	struct chunk *chk = chk_head(buf);
 	while (chk) {
 		next = chk_next(chk);
-		free(chk);
+		rb_free(chk);
 		chk = next;
 	}
 	wcsbuf_init(buf);
@@ -48,7 +48,7 @@ static void wcsbuf_append_new(struct wcsbuf *buf, wchar_t *src, int len)
 	while (buf->length >= (buf->csize << 2))
 		buf->csize <<= 1;
 	int size = len < buf->csize ? buf->csize : len;
-	struct chunk *chk = malloc(sizeof(struct chunk) + size * sizeof(wchar_t));
+	struct chunk *chk = rb_malloc(sizeof(struct chunk) + size * sizeof(wchar_t));
 	if (!chk) {
 		// TODO
 	}

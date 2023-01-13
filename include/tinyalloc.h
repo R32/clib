@@ -13,6 +13,13 @@
 #	define TINYALLOC_FREELIST_MAX      16
 #endif
 
+#ifndef rt_malloc
+#	define rt_malloc malloc
+#endif
+#ifndef rt_free
+#	define rt_free free
+#endif
+
 // private
 struct allocator_base {
 	int chksize; // in KB
@@ -45,7 +52,19 @@ struct fixedalloc_root {
 };
 
 C_FUNCTION_BEGIN
-// @chksize: The KB size of each chunk
+
+/*
+ * @chksize: The KB size of each chunk
+ *
+ * ```c
+ * // struct initialization
+ * struct tinyalloc_root tiny = {
+ *	.chksize = 32,            // In Kb, You could adjust this value according to your needs
+ *	.metasize = sizeof(int),  // Same as sizeof(struct meta)
+ * // The compiler will automatically set the remaining fields to NULL(0)
+ * };
+ * ```
+ */
 void tinyalloc_init(struct tinyalloc_root *fixed, int chksize);
 
 void tinyfree(struct tinyalloc_root *root, void *ptr);
@@ -56,7 +75,13 @@ void tinyreset(struct tinyalloc_root *root);
 
 void tinydestroy(struct tinyalloc_root *root);
 
-// bump allocator
+/*
+ * bump allocator
+ *
+ * ```c
+ * struct bumpalloc_root bump = { .chksize = 4 };
+ * ```
+ */
 void bumpalloc_init(struct bumpalloc_root *fixed, int chksize);
 
 void *bumpalloc(struct bumpalloc_root *bump, int size);
@@ -65,7 +90,13 @@ void bumpreset(struct bumpalloc_root *bump);
 
 void bumpdestroy(struct bumpalloc_root *bump);
 
-// fixed allocator
+/*
+ * fixed allocator
+ *
+ * ```c
+ * struct fixedalloc_root fixed = { .chksize = 4 };
+ * ```
+ */
 void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size);
 
 void *fixedalloc(struct fixedalloc_root *fixed);

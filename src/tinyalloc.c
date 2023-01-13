@@ -45,7 +45,7 @@ static inline void chunk_add(struct chunk *chk, struct allocator_base *base)
 
 static struct chunk *chunk_new(int k, int metasize)
 {
-	struct chunk *chk = malloc(N1024 * k);
+	struct chunk *chk = rt_malloc(N1024 * k);
 	if (!chk)
 		return NULL;
 	chk->size = N1024 * k - sizeof(struct chunk);
@@ -179,7 +179,7 @@ static void chunks_destroy(struct allocator_base *base)
 	struct chunk *next;
 	while (chk) {
 		next = chk_next(chk);
-		free(chk);
+		rt_free(chk);
 		chk = next;
 	}
 	chk_head(base) = NULL;

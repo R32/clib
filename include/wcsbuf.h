@@ -5,6 +5,13 @@
 #define R_WCSBUF_H
 #include "rclibs.h"
 
+#ifndef rb_malloc
+#	define rb_malloc malloc
+#endif
+#ifndef rb_free
+#	define rb_free free
+#endif
+
 struct wcsbuf {
 	int csize;
 	int length; // length of input;
