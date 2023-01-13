@@ -12,6 +12,7 @@
 #include "tinyalloc.h"
 #include "strbuf.h"
 #include "wcsbuf.h"
+#include "rarray.h"
 
 struct blk_s {
 	int n;
@@ -464,6 +465,40 @@ void t_wcsbuf()
 	wcsbuf_release(&buf);
 }
 
+void t_rarray()
+{
+	struct point {
+		int x, y, z;
+	};
+	int max = 101;
+	struct rarray arr;
+	rarray_new(&arr, sizeof(struct point), 16);
+	for (int i = 0; i < max; i++) {
+		rarray_push(&arr, sizeof(struct point), &((struct point) { i, i * 2, i * 4 }));
+	}
+	assert(rarray_len(&arr) == max);
+
+	for (int i = 0; i < max; i++) {
+		struct point *pt = rarray_get(&arr, sizeof(struct point), i);
+		assert(pt->x == i && pt->y == i * 2 && pt->z == i * 4);
+		pt->x += 1;
+		pt->y += 1;
+		pt->z += 1;
+		rarray_set(&arr, sizeof(struct point), i, pt);
+	}
+
+	struct point *pt = rarray_pop(&arr, sizeof(struct point));
+	max--;
+	while (pt) {
+		assert(rarray_len(&arr) == max);
+		assert((pt->x - 1) == (max * 1) && (pt->y - 1) == (max * 2) && (pt->z - 1) == (max * 4));
+		pt = rarray_pop(&arr, sizeof(struct point));
+		max--;
+	}
+	assert(rarray_len(&arr) == 0);
+	rarray_free(&arr);
+}
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
@@ -471,6 +506,7 @@ int main(int argc, char** args) {
 	t_rbtree();
 	t_strbuf();
 	t_wcsbuf();
+	t_rarray();
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();

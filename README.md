@@ -7,9 +7,11 @@ clib
   * bumpalloc : The requested memory block cannot be freed individually, you can only call `bumpreset/bumpdestroy` to free all blocks at once
   * fixedalloc :
 
-- `strbuf`: string buffer
+- `strbuf`: Auto-growing string buffer
 
   * `wcsbuf` : The wchar_t version of strbuf
+
+- `rarray`: Auto-growing arrays(by `realloc`) and providing functions such as `push/pop/get/set`
 
 - `slist.h`: Singly Linked List.
 
