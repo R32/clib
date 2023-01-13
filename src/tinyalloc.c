@@ -7,7 +7,6 @@
 #include "tinyalloc.h"
 #include "slist.h"
 
-#define CHK_SIZE           TINYALLOC_CHK_SIZE
 #define BLK_BASE           TINYALLOC_BLK_BASE
 #define FREELIST_MAX       TINYALLOC_FREELIST_MAX
 
@@ -21,6 +20,7 @@ struct meta {
 #define META_FULLSIZE(m)   ((m)->size + sizeof(struct meta))
 #define FREE_NEXT(m)       (*(void **)(m)->data)
 #define FREE_ROOT(root, i) ((root)->freelist[i])
+#define FREE_RESET(fl)     (freelist_reset(fl, ARRAYSIZE(fl)))
 #define N1024              1024
 
 struct chunk {
@@ -51,7 +51,7 @@ static struct chunk *chunk_new(int k, int metasize)
 	return chk;
 }
 
-static struct chunk *chunk_pickup(struct slist_head *head, int size, int metasize)
+static struct chunk *chunk_pickup(struct slist_head *head, int fixed_chksize, int size, int metasize)
 {
 	int chksize;
 	struct chunk *chk;
@@ -72,7 +72,7 @@ static struct chunk *chunk_pickup(struct slist_head *head, int size, int metasiz
 		}
 	Chunknew:
 		chksize = size + (sizeof(struct chunk) + BLK_BASE + (N1024 - 1));
-		chk = chunk_new(chksize / N1024 <= CHK_SIZE ? CHK_SIZE : chksize / N1024, metasize);
+		chk = chunk_new(chksize / N1024 <= fixed_chksize ? fixed_chksize : chksize / N1024, metasize);
 		if (chk)
 			slist_add(chk_to_node(chk), head);
 		return chk;
@@ -82,6 +82,12 @@ static struct chunk *chunk_pickup(struct slist_head *head, int size, int metasiz
 		slist_add(chk_to_node(chk), head);
 	}
 	return chk;
+}
+
+static void freelist_reset(void **freelist, int max)
+{
+	for (int i = 0; i < max; i++)
+		freelist[i] = NULL;
 }
 
 static inline int freelist_index(unsigned int size)
@@ -123,6 +129,15 @@ static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 	return curr;
 }
 
+void tinyalloc_init(struct tinyalloc_root *root, int chksize)
+{
+	if (chksize < 8)
+		chksize = 8;
+	root->chksize = chksize;
+	INIT_SLIST_HEAD(&root->chunk_head);
+	FREE_RESET(root->freelist);
+}
+
 void *tinyalloc(struct tinyalloc_root *root, int size)
 {
 	if (size < (16 - sizeof(struct meta))) {
@@ -134,7 +149,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	if (meta)
 		return META_DATAPTR(meta);
 
-	struct chunk *chk = chunk_pickup(chk_root(root), size, sizeof(struct meta));
+	struct chunk *chk = chunk_pickup(chk_root(root), root->chksize, size, sizeof(struct meta));
 	if (!chk)
 		return NULL;
 	meta = (struct meta *)chk_dataptr(chk);
@@ -173,22 +188,16 @@ static void chunks_destroy(struct slist_head *head)
 	}
 }
 
-static void freelist_reset(void **freelist, int max)
-{
-	for (int i = 0; i < max; i++)
-		freelist[i] = NULL;
-}
-
 void tinyreset(struct tinyalloc_root *root)
 {
 	chunks_reset(chk_root(root), sizeof(struct meta));
-	freelist_reset(root->freelist, ARRAYSIZE(root->freelist));
+	FREE_RESET(root->freelist);
 }
 
 void tinydestroy(struct tinyalloc_root *root)
 {
 	chunks_destroy(chk_root(root));
-	freelist_reset(root->freelist, ARRAYSIZE(root->freelist));
+	FREE_RESET(root->freelist);
 }
 
 /**
@@ -196,6 +205,14 @@ void tinydestroy(struct tinyalloc_root *root)
 * bump allocator
 *
 */
+void bumpalloc_init(struct bumpalloc_root *bump, int chksize)
+{
+	if (chksize <= 0)
+		chksize = 1;
+	bump->chksize = chksize;
+	INIT_SLIST_HEAD(&bump->chunk_head);
+}
+
 void *bumpalloc(struct bumpalloc_root *bump, int size)
 {
 	if (size < BLK_BASE) {
@@ -203,7 +220,7 @@ void *bumpalloc(struct bumpalloc_root *bump, int size)
 	} else {
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
-	struct chunk *chk = chunk_pickup(chk_root(bump), size, 0);
+	struct chunk *chk = chunk_pickup(chk_root(bump), bump->chksize, size, 0);
 	if (!chk)
 		return NULL;
 	char *ptr = chk_dataptr(chk);
@@ -230,16 +247,21 @@ void bumpdestroy(struct bumpalloc_root *bump)
 #define FIXED_NEXT(ptr)   (*(void **)(ptr))
 #define FIXED_HEAD(fixed) ((fixed)->freelist[0])
 
-void fixedalloc_init(struct fixedalloc_root *fixed, int size)
+void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size)
 {
 	if (size < BLK_BASE) {
 		size = BLK_BASE;
 	} else {
 		size = ALIGN_POW2(size, BLK_BASE);
 	}
+	fixed->size = size;
+
+	if (chksize <= 0)
+		chksize = 1;
+	fixed->chksize = chksize;
+
 	INIT_SLIST_HEAD(chk_root(fixed));
 	FIXED_HEAD(fixed) = NULL;
-	fixed->size = size;
 }
 
 void *fixedalloc(struct fixedalloc_root *fixed)
@@ -250,7 +272,7 @@ void *fixedalloc(struct fixedalloc_root *fixed)
 		return result;
 	}
 	const int size = fixed->size;
-	struct chunk *chk = chunk_pickup(chk_root(fixed), size, 0);
+	struct chunk *chk = chunk_pickup(chk_root(fixed), fixed->chksize, size, 0);
 	if (!chk)
 		return NULL;
 	result = chk_dataptr(chk);

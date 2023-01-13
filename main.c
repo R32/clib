@@ -202,7 +202,8 @@ void *__alloc_x(struct tinyalloc_root *root, int size) {
 }
 void t_tinyalloc() {
 	srand((uint32_t)time(NULL));
-	struct tinyalloc_root root = {NULL};
+	struct tinyalloc_root root;
+	tinyalloc_init(&root, 32);
 
 	// randomly alloc and free
 	#define RAND()        (rand() & (BLKMAX - 1))
@@ -276,7 +277,8 @@ void *__alloc_y(struct bumpalloc_root *bump, int size)
 void t_bumpalloc()
 {
 	srand((uint32_t)time(NULL));
-	struct bumpalloc_root bump = { NULL };
+	struct bumpalloc_root bump;
+	bumpalloc_init(&bump, 16);
 	#define RAND()        (rand() & (BLKMAX - 1))
 	#undef __alloc
 	#define __alloc(size) __alloc_y(&bump, size)
@@ -325,7 +327,7 @@ void t_fixedalloc()
 {
 	#define ASIZE         (960)
 	struct fixedalloc_root fixed;
-	fixedalloc_init(&fixed, 512);
+	fixedalloc_init(&fixed, 16, 512);
 	char* aptr[ASIZE];
 	for (int i = 0; i < ASIZE; i++) {
 		aptr[i] = fixedalloc(&fixed);

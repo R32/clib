@@ -6,9 +6,6 @@
 #define R_TINYALLOC_H
 #include "rclibs.h"
 
-#ifndef TINYALLOC_CHK_SIZE
-	#define TINYALLOC_CHK_SIZE          64
-#endif
 #ifndef TINYALLOC_BLK_BASE
 	#define TINYALLOC_BLK_BASE          8
 #endif
@@ -19,19 +16,24 @@
 struct tinyalloc_root {
 	struct slist_head chunk_head;
 	void *freelist[TINYALLOC_FREELIST_MAX + 1];
+	int chksize;  // in KB
 };
 
 struct bumpalloc_root {
 	struct slist_head chunk_head;
+	int chksize;
 };
 
 struct fixedalloc_root {
 	struct slist_head chunk_head;
 	void *freelist[1];
 	int size;
+	int chksize;
 };
 
 C_FUNCTION_BEGIN
+// @chksize: The KB size of each chunk
+void tinyalloc_init(struct tinyalloc_root *fixed, int chksize);
 
 void tinyfree(struct tinyalloc_root *root, void *ptr);
 
@@ -42,6 +44,8 @@ void tinyreset(struct tinyalloc_root *root);
 void tinydestroy(struct tinyalloc_root *root);
 
 // bump allocator
+void bumpalloc_init(struct bumpalloc_root *fixed, int chksize);
+
 void *bumpalloc(struct bumpalloc_root *bump, int size);
 
 void bumpreset(struct bumpalloc_root *bump);
@@ -49,7 +53,7 @@ void bumpreset(struct bumpalloc_root *bump);
 void bumpdestroy(struct bumpalloc_root *bump);
 
 // fixed allocator
-void fixedalloc_init(struct fixedalloc_root *fixed, int size);
+void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size);
 
 void *fixedalloc(struct fixedalloc_root *fixed);
 
