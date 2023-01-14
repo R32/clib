@@ -496,6 +496,14 @@ void t_rarray()
 		max--;
 	}
 	assert(rarray_len(&arr) == 0);
+	rarray_setlen(&arr, sizeof(struct point), 168);
+	assert(rarray_len(&arr) == 168 && rarray_cap(&arr) == 168);
+
+	pt = rarray_fast_get(&arr, struct point, 0);
+	int x = pt->x, y = pt->y, z = pt->z;
+	rarray_fast_set(&arr, struct point, 1, pt);
+	pt = rarray_fast_get(&arr, struct point, 1);
+	assert(x == pt->x && y == pt->y && z == pt->z);
 	rarray_free(&arr);
 }
 

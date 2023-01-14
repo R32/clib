@@ -19,12 +19,17 @@ struct rarray {
 	prarray_base base;
 };
 
+#define rarray_fast_get(prar, type, i)    (((type *)(prar)->base) + (i))
+#define rarray_fast_set(prar, type, i, v) (*rarray_fast_get(prar, type, i) = *(v))
+
 C_FUNCTION_BEGIN
 
 void rarray_new(struct rarray *prar, int elemsize, int cap);
 void rarray_free(struct rarray *prar);
+// Increase capacity only
 void rarray_grow(struct rarray *prar, int elemsize, int cap);
-
+// Set "len" and increment "cap" if exceeded
+void rarray_setlen(struct rarray *prar, int elemsize, int len);
 int rarray_len(struct rarray *prar);
 int rarray_cap(struct rarray *prar);
 

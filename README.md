@@ -13,6 +13,26 @@ clib
 
 - [`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`) and providing functions such as `push/pop/get/set`
 
+  ```c
+  // rarray_fast_set, rarray_fast_get
+  struct point {
+	int x, y, z;
+  };
+  struct rarray array;
+  int cap = 16;
+  rarray_new(&array, sizeof(struct point), cap);
+  rarray_setlen(&array, sizeof(struct point), cap); // set length
+  for (int i = 0; i < rarray_len(&array); i++) {
+	struct point point = { i, i, i };
+	rarray_fast_set(&array, struct point, i, &point);
+  }
+  for (int i = 0; i < rarray_len(&array); i++) {
+	struct point *ptr = rarray_fast_get(&array, struct point, i);
+	assert(ptr->x == i && ptr->y == i && ptr->z == i);
+  }
+  rarray_free(&array);
+  ```
+
 - `slist.h`: Singly Linked List.
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs

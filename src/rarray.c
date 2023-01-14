@@ -13,7 +13,7 @@ struct rarray_head {
 #define hd_to_base(head)     ((prarray_base)(head)->data)
 #define hd_from_base(base)   (container_of(base, struct rarray_head, data))
 
-static struct rarray_head *rarray_head_new(struct rarray_head *head, int elemsize, int cap)
+static struct rarray_head *rarray_head_realloc(struct rarray_head *head, int elemsize, int cap)
 {
 	cap = cap < 16 ? 16 : ALIGN_POW2(cap, 8);
 	elemsize = elemsize < 8 ? 8 : ALIGN_POW2(elemsize, 8);
@@ -24,7 +24,7 @@ static struct rarray_head *rarray_head_new(struct rarray_head *head, int elemsiz
 
 void rarray_new(struct rarray *prar, int elemsize, int cap)
 {
-	struct rarray_head *head = rarray_head_new(NULL, elemsize, cap);
+	struct rarray_head *head = rarray_head_realloc(NULL, elemsize, cap);
 	head->len = 0;
 	prar->base = hd_to_base(head);
 }
@@ -38,9 +38,9 @@ void rarray_free(struct rarray *prar)
 
 void rarray_grow(struct rarray *prar, int elemsize, int cap)
 {
-	struct rarray_head *head = prar->base ? hd_from_base(prar->base) : NULL;
-	head = rarray_head_new(head, elemsize, cap);
-	if (head->len > head->cap)
+	struct rarray_head *head = hd_from_base(prar->base);
+	head = rarray_head_realloc(head, elemsize, cap);
+	if (head->len > head->cap) // if shrinks
 		head->len = head->cap;
 	prar->base = hd_to_base(head);
 }
@@ -48,6 +48,14 @@ void rarray_grow(struct rarray *prar, int elemsize, int cap)
 int rarray_len(struct rarray *prar)
 {
 	return hd_from_base(prar->base)->len;
+}
+
+void rarray_setlen(struct rarray *prar, int elemsize, int len)
+{
+	struct rarray_head *head = hd_from_base(prar->base);
+	head->len = len;
+	if (len > head->cap)
+		rarray_grow(prar, elemsize, len);
 }
 
 int rarray_cap(struct rarray *prar)
