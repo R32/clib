@@ -18,19 +18,19 @@ clib
   struct point {
 	int x, y, z;
   };
-  struct rarray array;
-  int cap = 16;
-  rarray_new(&array, sizeof(struct point), cap);
-  rarray_setlen(&array, sizeof(struct point), cap); // set length
-  for (int i = 0; i < rarray_len(&array); i++) {
+  struct rarray array = { .size = sizeof(struct point), .base = NULL };
+  int len = 16;
+  // you could also call `rarray_grow()` to increase "capacity" only
+  rarray_setlen(&array, len);
+  for (int i = 0; i < len; i++) {
 	struct point point = { i, i, i };
 	rarray_fast_set(&array, struct point, i, &point);
   }
-  for (int i = 0; i < rarray_len(&array); i++) {
+  for (int i = 0; i < len; i++) {
 	struct point *ptr = rarray_fast_get(&array, struct point, i);
 	assert(ptr->x == i && ptr->y == i && ptr->z == i);
   }
-  rarray_free(&array);
+  rarray_discard(&array);
   ```
 
 - `slist.h`: Singly Linked List.

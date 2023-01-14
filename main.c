@@ -471,40 +471,76 @@ void t_rarray()
 		int x, y, z;
 	};
 	int max = 101;
-	struct rarray arr;
-	rarray_new(&arr, sizeof(struct point), 16);
+	struct rarray arr = { .size = sizeof(struct point), .base = NULL };
+	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) == 0);
+	// grow
+	rarray_grow(&arr, 32);
+	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) == 32);
+	rarray_grow(&arr, 64);
+	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) == 64);
+	rarray_setlen(&arr, 64);
+	assert(rarray_len(&arr) == 64 && rarray_cap(&arr) == 64);
+	rarray_grow(&arr, 32);
+	assert(rarray_len(&arr) == 32 && rarray_cap(&arr) == 32);
+	rarray_discard(&arr);
+	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) == 0);
+
+	// set
+	rarray_set(&arr, 15, &((struct point) { 1, 2, 3 }));
+	assert(rarray_len(&arr) == 16 && rarray_cap(&arr) >= 16);
+	rarray_discard(&arr);
+
+	// setlen
+	rarray_setlen(&arr, max);
+	assert(rarray_len(&arr) == max && rarray_cap(&arr) >= max);
+	rarray_setlen(&arr, 0);
+	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) >= max);
+
+	// push
 	for (int i = 0; i < max; i++) {
-		rarray_push(&arr, sizeof(struct point), &((struct point) { i, i * 2, i * 4 }));
+		rarray_push(&arr, &((struct point) { i, i * 2, i * 4 }));
 	}
 	assert(rarray_len(&arr) == max);
 
 	for (int i = 0; i < max; i++) {
-		struct point *pt = rarray_get(&arr, sizeof(struct point), i);
+		struct point *pt = rarray_get(&arr, i);
 		assert(pt->x == i && pt->y == i * 2 && pt->z == i * 4);
 		pt->x += 1;
 		pt->y += 1;
 		pt->z += 1;
-		rarray_set(&arr, sizeof(struct point), i, pt);
+		rarray_set(&arr, i, pt);
 	}
 
-	struct point *pt = rarray_pop(&arr, sizeof(struct point));
+	struct point *pt = rarray_pop(&arr);
 	max--;
 	while (pt) {
 		assert(rarray_len(&arr) == max);
 		assert((pt->x - 1) == (max * 1) && (pt->y - 1) == (max * 2) && (pt->z - 1) == (max * 4));
-		pt = rarray_pop(&arr, sizeof(struct point));
+		pt = rarray_pop(&arr);
 		max--;
 	}
 	assert(rarray_len(&arr) == 0);
-	rarray_setlen(&arr, sizeof(struct point), 168);
-	assert(rarray_len(&arr) == 168 && rarray_cap(&arr) == 168);
 
 	pt = rarray_fast_get(&arr, struct point, 0);
 	int x = pt->x, y = pt->y, z = pt->z;
 	rarray_fast_set(&arr, struct point, 1, pt);
 	pt = rarray_fast_get(&arr, struct point, 1);
 	assert(x == pt->x && y == pt->y && z == pt->z);
-	rarray_free(&arr);
+	rarray_discard(&arr);
+
+	struct rarray array = { .size = sizeof(struct point),.base = NULL };
+	int len = 16;
+	// you could also call `rarray_grow()` to increase "capacity" only
+	rarray_setlen(&array, len);
+	for (int i = 0; i < len; i++) {
+		struct point point = { i, i, i };
+		rarray_fast_set(&array, struct point, i, &point);
+	}
+	for (int i = 0; i < len; i++) {
+		struct point *ptr = rarray_fast_get(&array, struct point, i);
+		assert(ptr->x == i && ptr->y == i && ptr->z == i);
+	}
+	rarray_discard(&array);
 }
 
 int main(int argc, char** args) {

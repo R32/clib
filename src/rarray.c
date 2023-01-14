@@ -13,86 +13,111 @@ struct rarray_head {
 #define hd_to_base(head)     ((prarray_base)(head)->data)
 #define hd_from_base(base)   (container_of(base, struct rarray_head, data))
 
-static struct rarray_head *rarray_head_realloc(struct rarray_head *head, int elemsize, int cap)
+static void phead_realloc(struct rarray *prar, int cap, int len)
 {
-	cap = cap < 16 ? 16 : ALIGN_POW2(cap, 8);
-	elemsize = elemsize < 8 ? 8 : ALIGN_POW2(elemsize, 8);
-	head = ra_realloc(head, sizeof(struct rarray_head) + elemsize * cap);
+	struct rarray_head *head = prar->base ? hd_from_base(prar->base) : NULL;
+	head = ra_realloc(head, sizeof(struct rarray_head) + prar->size * cap);
 	head->cap = cap;
-	return head;
-}
-
-void rarray_new(struct rarray *prar, int elemsize, int cap)
-{
-	struct rarray_head *head = rarray_head_realloc(NULL, elemsize, cap);
-	head->len = 0;
+	head->len = len;
 	prar->base = hd_to_base(head);
 }
 
-void rarray_free(struct rarray *prar)
+void rarray_init(struct rarray *prar, int elemsize)
 {
+	prar->size = elemsize;
+	prar->base = NULL;
+}
+
+void rarray_discard(struct rarray *prar)
+{
+	if (!prar->base)
+		return;
 	struct rarray_head *head = hd_from_base(prar->base);
 	ra_free(head);
 	prar->base = NULL;
 }
 
-void rarray_grow(struct rarray *prar, int elemsize, int cap)
+void rarray_grow(struct rarray *prar, int cap)
 {
-	struct rarray_head *head = hd_from_base(prar->base);
-	head = rarray_head_realloc(head, elemsize, cap);
-	if (head->len > head->cap) // if shrinks
-		head->len = head->cap;
-	prar->base = hd_to_base(head);
+	cap = cap < 16 ? 16 : ALIGN_POW2(cap, 8);
+	if (!prar->base) {
+		phead_realloc(prar, cap, 0);
+		return;
+	}
+	int len = hd_from_base(prar->base)->len;
+	phead_realloc(prar, cap, len > cap ? cap : len);
 }
 
 int rarray_len(struct rarray *prar)
 {
+	if (!prar->base)
+		return 0;
 	return hd_from_base(prar->base)->len;
 }
 
-void rarray_setlen(struct rarray *prar, int elemsize, int len)
+void rarray_setlen(struct rarray *prar, int len)
 {
-	struct rarray_head *head = hd_from_base(prar->base);
-	head->len = len;
-	if (len > head->cap)
-		rarray_grow(prar, elemsize, len);
+	if (prar->base) {
+		struct rarray_head *head = hd_from_base(prar->base);
+		if (len <= head->cap) {
+			head->len = len;
+			return;
+		}
+	}
+	int cap = len < 16 ? 16 : ALIGN_POW2(len, 8);
+	phead_realloc(prar, cap, len);
 }
 
 int rarray_cap(struct rarray *prar)
 {
+	if (!prar->base)
+		return 0;
 	return hd_from_base(prar->base)->cap;
 }
 
-int rarray_push(struct rarray *prar, int elemsize, void *value)
+int rarray_push(struct rarray *prar, void *value)
 {
+	if (!prar->base)
+		phead_realloc(prar, 16, 0);
 	struct rarray_head *head = hd_from_base(prar->base);
 	if (head->len == head->cap) {
-		rarray_grow(prar, elemsize, head->cap * 2);
+		phead_realloc(prar, head->cap * 2, head->len);
 		head = hd_from_base(prar->base);
 	}
-	memcpy(head->data + (head->len++ * elemsize), value, elemsize);
+	memcpy(head->data + (head->len++ * prar->size), value, prar->size);
 	return head->len;
 }
 
-void *rarray_pop(struct rarray *prar, int elemsize)
+void *rarray_pop(struct rarray *prar)
 {
+	if (!prar->base)
+		return NULL;
 	struct rarray_head *head = hd_from_base(prar->base);
 	if (head->len > 0)
-		return head->data + (--head->len * elemsize);
+		return head->data + (--head->len * prar->size);
 	return NULL;
 }
 
-void *rarray_get(struct rarray *prar, int elemsize, int index)
+void *rarray_get(struct rarray *prar, int index)
 {
+	if (!prar->base)
+		return NULL;
 	struct rarray_head *head = hd_from_base(prar->base);
 	if (index >= 0 && index < head->len)
-		return head->data + (index * elemsize);
+		return head->data + (index * prar->size);
 	return NULL;
 }
 
-void rarray_set(struct rarray *prar, int elemsize, int index, void *value)
+void rarray_set(struct rarray *prar, int index, void *value)
 {
+	if (index < 0)
+		return;
+	int len = prar->base ? hd_from_base(prar->base)->len : 0;
+	if (len <= index) {
+		len = index + 1;
+		int cap = len < 16 ? 16 : ALIGN_POW2(len, 8);
+		phead_realloc(prar, cap, len);
+	}
 	struct rarray_head *head = hd_from_base(prar->base);
-	if (index >= 0 && index < head->len)
-		memcpy(head->data + (index * elemsize), value, elemsize);
+	memcpy(head->data + (index * prar->size), value, prar->size);
 }

@@ -17,6 +17,7 @@ typedef struct _rarray_base *prarray_base;
 
 struct rarray {
 	prarray_base base;
+	int size; // elemsize
 };
 
 #define rarray_fast_get(prar, type, i)    (((type *)(prar)->base) + (i))
@@ -24,19 +25,24 @@ struct rarray {
 
 C_FUNCTION_BEGIN
 
-void rarray_new(struct rarray *prar, int elemsize, int cap);
-void rarray_free(struct rarray *prar);
+void rarray_init(struct rarray *prar, int elemsize);
+
+// Release "prar->base" but "prar" can still be reused
+void rarray_discard(struct rarray *prar);
+
 // Increase capacity only
-void rarray_grow(struct rarray *prar, int elemsize, int cap);
+void rarray_grow(struct rarray *prar, int cap);
+
 // Set "len" and increment "cap" if exceeded
-void rarray_setlen(struct rarray *prar, int elemsize, int len);
+void rarray_setlen(struct rarray *prar, int len);
+
 int rarray_len(struct rarray *prar);
 int rarray_cap(struct rarray *prar);
 
-int rarray_push(struct rarray *prar, int elemsize, void *value);
-void *rarray_pop(struct rarray *prar, int elemsize);
-void *rarray_get(struct rarray *prar, int elemsize, int index);
-void rarray_set(struct rarray *prar, int elemsize, int index, void *value);
+int rarray_push(struct rarray *prar, void *value);
+void *rarray_pop(struct rarray *prar);
+void *rarray_get(struct rarray *prar, int index);
+void rarray_set(struct rarray *prar, int index, void *value);
 
 C_FUNCTION_END
 #endif
