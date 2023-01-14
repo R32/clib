@@ -31,6 +31,26 @@ void strbuf_init(struct strbuf *buf)
 	buf->buffer = NULL;
 }
 
+void strbuf_reset(struct strbuf *buf)
+{
+	struct chunk *next;
+	struct chunk *chk = chk_head(buf);
+	if (!chk)
+		return;
+	next = chk_next(chk);
+	// Keep the first chunk
+	chk_next(chk) = NULL;
+	chk->pos = 0;
+	buf->length = 0;
+	// Release the remaining chunks
+	chk = next;
+	while (chk) {
+		next = chk_next(next);
+		rb_free(chk);
+		chk = next;
+	}
+}
+
 void strbuf_release(struct strbuf *buf)
 {
 	struct chunk *next;

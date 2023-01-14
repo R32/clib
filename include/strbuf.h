@@ -23,6 +23,7 @@ struct strbuf {
 C_FUNCTION_BEGIN
 
 void strbuf_init(struct strbuf *buf);
+void strbuf_reset(struct strbuf *buf);
 void strbuf_release(struct strbuf *buf);
 
 void strbuf_append_char(struct strbuf *buf, char c);

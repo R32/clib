@@ -23,6 +23,7 @@ struct wcsbuf {
 C_FUNCTION_BEGIN
 
 void wcsbuf_init(struct wcsbuf *buf);
+void wcsbuf_reset(struct wcsbuf *buf);
 void wcsbuf_release(struct wcsbuf *buf);
 
 void wcsbuf_append_char(struct wcsbuf *buf, wchar_t c);

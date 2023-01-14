@@ -410,7 +410,10 @@ void t_strbuf()
 	assert(strlen(ptr) == strlen(result) && strcmp(ptr, result) == 0);
 #	endif
 	free(ptr);
+	strbuf_reset(&buf);
+	assert(buf.buffer && buf.length == 0);
 	strbuf_release(&buf);
+	assert(buf.buffer == NULL);
 }
 
 void t_wcsbuf()
@@ -462,7 +465,10 @@ void t_wcsbuf()
 	fclose(stream);
 #	endif
 	free(ptr);
+	wcsbuf_reset(&buf);
+	assert(buf.buffer && buf.length == 0);
 	wcsbuf_release(&buf);
+	assert(buf.buffer == NULL);
 }
 
 void t_rarray()
