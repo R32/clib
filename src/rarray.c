@@ -3,6 +3,8 @@
  */
 
 #include "rarray.h"
+#include <stdlib.h>
+#include <string.h>
 
 struct rarray_head {
 	int len;

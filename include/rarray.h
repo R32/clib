@@ -2,8 +2,6 @@
 #define R_ARRAY_H
 
 #include "rclibs.h"
-#include <stdlib.h>
-#include <string.h>
 
 #ifndef ra_realloc
 #	define ra_realloc realloc
