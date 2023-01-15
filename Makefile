@@ -7,6 +7,8 @@ EXE      := test.exe
 LIB      := libr32c.a
 CFLAGS   := -fshort-wchar
 INCLUDES := -I$(INC)
+OBJS     := slist.o rbtree.o ucs2.o tinyalloc.o strbuf.o wcsbuf.o rarray.o \
+            rstream.o
 
 ifdef mingw
     CC   := i686-w64-mingw32-gcc
@@ -33,7 +35,7 @@ $(OBJ):
 $(EXE): $(OBJ)/main.o $(LIB)
 	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(dir $(LIB)) -lr32c -o $@
 
-$(LIB): $(addprefix $(OBJ)/,slist.o rbtree.o ucs2.o tinyalloc.o strbuf.o wcsbuf.o rarray.o)
+$(LIB): $(OBJS:%.o=$(OBJ)/%.o)
 	ar rcs $@ $^
 
 # lower-case vpath, NOTE: Don't uses vpath to match the generated file.
@@ -58,3 +60,4 @@ $(OBJ)/tinyalloc.o: tinyalloc.c tinyalloc.h
 $(OBJ)/strbuf.o: strbuf.c strbuf.h
 $(OBJ)/wcsbuf.o: wcsbuf.c wcsbuf.h
 $(OBJ)/rarray.o: rarray.c rarray.h
+$(OBJ)/rstream.o: rstream.c rstream.h rlex.h
