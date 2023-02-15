@@ -45,4 +45,4 @@ clib
 
 ## external links
 
-- [simple lexer tool](https://github.com/r32/lex) is used for simple regexp or token
+- [lexer and Simple LR tool](https://github.com/r32/lex)

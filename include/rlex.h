@@ -65,10 +65,15 @@ struct rlex_position {
 };
 
 struct rlex {
-	struct rlex_position pos;
+	union {
+		struct rlex_position pos;
+		struct {
+			int pmin, pmax;
+		};
+	};
 	int size;  // src size in characters
 	int ___x;  // align pad
-	unsigned char *src;
+	void *src; // LEXCHAR
 	int (*token)(struct rlex *lex);
 };
 
@@ -90,6 +95,6 @@ struct rlex {
 		(p1).max > (p2).max ? (p1).max : (p2).max  \
 	})
 
-#define rlex_contiguous(p1, p2) ((p1).pmax == (p2).pmin)
+#define rlex_contiguous(p1, p2) ((p1).max == (p2).min)
 
 #endif
