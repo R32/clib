@@ -30,7 +30,7 @@ void rarray_init(struct rarray *prar, int elemsize)
 	prar->base = NULL;
 }
 
-void rarray_discard(struct rarray *prar)
+void rarray_release(struct rarray *prar)
 {
 	if (!prar->base)
 		return;

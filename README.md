@@ -11,29 +11,29 @@ clib
 
   * [`wcsbuf`](src/wcsbuf.c) : The wchar_t version of strbuf
 
-- [`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`) and providing functions such as `push/pop/get/set`
+- [`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`)
 
   ```c
   // rarray_fast_set, rarray_fast_get
   struct point {
-	int x, y, z;
+      int x, y, z;
   };
   struct rarray array = { .size = sizeof(struct point), .base = NULL };
   int len = 16;
   // you could also call `rarray_grow()` to increase "capacity" only
   rarray_setlen(&array, len);
+  struct point *ptr = rarray_fast_get(&array, struct point, 0);
   for (int i = 0; i < len; i++) {
-	struct point point = { i, i, i };
-	rarray_fast_set(&array, struct point, i, &point);
+      *ptr++ = (struct point){ i, i, i };
   }
   for (int i = 0; i < len; i++) {
-	struct point *ptr = rarray_fast_get(&array, struct point, i);
-	assert(ptr->x == i && ptr->y == i && ptr->z == i);
+      struct point *ptr = rarray_fast_get(&array, struct point, i);
+      assert(ptr->x == i && ptr->y == i && ptr->z == i);
   }
   rarray_discard(&array);
   ```
 
-- `slist.h`: Singly Linked List.
+- ~~`slist.h`: Singly Linked List.~~ Useless
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs
 

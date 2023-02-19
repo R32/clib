@@ -1,6 +1,6 @@
 /*
-* SPDX-License-Identifier: GPL-2.0
-*/
+ * SPDX-License-Identifier: GPL-2.0
+ */
 
 /*
  * most of this code is taken from the hashlink/buffer.c by Haxe Foundation
@@ -21,14 +21,14 @@ struct chunk {
 };
 
 #define chk_data(chk)  ((chk)->data)
-#define chk_head(buf)  ((buf)->buffer)
+#define chk_head(buf)  ((buf)->chunks)
 #define chk_next(chk)  ((chk)->next)
 
 void strbuf_init(struct strbuf *buf)
 {
 	buf->csize = 128;
 	buf->length = 0;
-	buf->buffer = NULL;
+	buf->chunks = NULL;
 }
 
 void strbuf_reset(struct strbuf *buf)

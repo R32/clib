@@ -1,21 +1,15 @@
 /*
-* SPDX-License-Identifier: GPL-2.0
-*/
+ * SPDX-License-Identifier: GPL-2.0
+ */
 #ifndef R_WCSBUF_H
 #define R_WCSBUF_H
 #include "rclibs.h"
+#include "strbuf.h"
 
-#ifndef rb_malloc
-#	define rb_malloc malloc
-#endif
-#ifndef rb_free
-#	define rb_free free
-#endif
-
-struct wcsbuf {
+struct wcsbuf { // same as strbuf
 	int csize;
-	int length; // length of input;
-	void *buffer;
+	int length;
+	void *chunks;
 };
 
 #define wcsbuf_length(buf) ((buf)->length)

@@ -1,6 +1,6 @@
 /*
-* SPDX-License-Identifier: GPL-2.0
-*/
+ * SPDX-License-Identifier: GPL-2.0
+ */
 
 /*
  * most of this code is taken from the hashlink/buffer.c by Haxe Foundation
@@ -21,46 +21,22 @@ struct chunk {
 };
 
 #define chk_data(chk)  ((chk)->data)
-#define chk_head(buf)  ((buf)->buffer)
+#define chk_head(buf)  ((buf)->chunks)
 #define chk_next(chk)  ((chk)->next)
 
 void wcsbuf_init(struct wcsbuf *buf)
 {
-	buf->csize = 128;
-	buf->length = 0;
-	buf->buffer = NULL;
+	strbuf_init((struct strbuf *)buf);
 }
 
 void wcsbuf_reset(struct wcsbuf *buf)
 {
-	struct chunk *next;
-	struct chunk *chk = chk_head(buf);
-	if (!chk)
-		return;
-	next = chk_next(chk);
-	// Keep the first chunk
-	chk_next(chk) = NULL;
-	chk->pos = 0;
-	buf->length = 0;
-	// Release the remaining chunks
-	chk = next;
-	while (chk) {
-		next = chk_next(next);
-		rb_free(chk);
-		chk = next;
-	}
+	strbuf_reset((struct strbuf *)buf);
 }
 
 void wcsbuf_release(struct wcsbuf *buf)
 {
-	struct chunk *next;
-	struct chunk *chk = chk_head(buf);
-	while (chk) {
-		next = chk_next(chk);
-		rb_free(chk);
-		chk = next;
-	}
-	wcsbuf_init(buf);
+	strbuf_release((struct strbuf *)buf);
 }
 
 static void wcsbuf_append_new(struct wcsbuf *buf, wchar_t *src, int len)

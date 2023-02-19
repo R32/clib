@@ -1,6 +1,6 @@
 /*
-* SPDX-License-Identifier: GPL-2.0
-*/
+ * SPDX-License-Identifier: GPL-2.0
+ */
 #ifndef R_STRBUF_H
 #define R_STRBUF_H
 #include "rclibs.h"
@@ -13,9 +13,9 @@
 #endif
 
 struct strbuf {
-	int csize;
-	int length; // length of input;
-	void *buffer;
+	int csize;  // the elements size of the last chunk
+	int length; // elements length;
+	void *chunks;
 };
 
 #define strbuf_length(buf) ((buf)->length)

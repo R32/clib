@@ -411,9 +411,9 @@ void t_strbuf()
 #	endif
 	free(ptr);
 	strbuf_reset(&buf);
-	assert(buf.buffer && buf.length == 0);
+	assert(buf.chunks && buf.length == 0);
 	strbuf_release(&buf);
-	assert(buf.buffer == NULL);
+	assert(buf.chunks == NULL);
 }
 
 void t_wcsbuf()
@@ -466,9 +466,9 @@ void t_wcsbuf()
 #	endif
 	free(ptr);
 	wcsbuf_reset(&buf);
-	assert(buf.buffer && buf.length == 0);
+	assert(buf.chunks && buf.length == 0);
 	wcsbuf_release(&buf);
-	assert(buf.buffer == NULL);
+	assert(buf.chunks == NULL);
 }
 
 void t_rarray()
@@ -488,13 +488,13 @@ void t_rarray()
 	assert(rarray_len(&arr) == 64 && rarray_cap(&arr) == 64);
 	rarray_grow(&arr, 32);
 	assert(rarray_len(&arr) == 32 && rarray_cap(&arr) == 32);
-	rarray_discard(&arr);
+	rarray_release(&arr);
 	assert(rarray_len(&arr) == 0 && rarray_cap(&arr) == 0);
 
 	// set
 	rarray_set(&arr, 15, &((struct point) { 1, 2, 3 }));
 	assert(rarray_len(&arr) == 16 && rarray_cap(&arr) >= 16);
-	rarray_discard(&arr);
+	rarray_release(&arr);
 
 	// setlen
 	rarray_setlen(&arr, max);
@@ -532,21 +532,21 @@ void t_rarray()
 	rarray_fast_set(&arr, struct point, 1, pt);
 	pt = rarray_fast_get(&arr, struct point, 1);
 	assert(x == pt->x && y == pt->y && z == pt->z);
-	rarray_discard(&arr);
+	rarray_release(&arr);
 
 	struct rarray array = { .size = sizeof(struct point),.base = NULL };
 	int len = 16;
 	// you could also call `rarray_grow()` to increase "capacity" only
 	rarray_setlen(&array, len);
+	pt = rarray_fast_get(&array, struct point, 0);
 	for (int i = 0; i < len; i++) {
-		struct point point = { i, i, i };
-		rarray_fast_set(&array, struct point, i, &point);
+		*pt++ = (struct point){ i, i, i };
 	}
 	for (int i = 0; i < len; i++) {
 		struct point *ptr = rarray_fast_get(&array, struct point, i);
 		assert(ptr->x == i && ptr->y == i && ptr->z == i);
 	}
-	rarray_discard(&array);
+	rarray_release(&array);
 }
 
 int main(int argc, char** args) {

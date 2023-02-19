@@ -10,12 +10,11 @@
 #	define ra_free free
 #endif
 
-struct _rarray_base;
-typedef struct _rarray_base *prarray_base;
+typedef struct rarray_base *prarray_base;
 
 struct rarray {
 	prarray_base base;
-	int size; // elemsize
+	int size; // sizeof(element)
 };
 
 #define rarray_fast_get(prar, type, i)    (((type *)(prar)->base) + (i))
@@ -26,7 +25,7 @@ C_FUNCTION_BEGIN
 void rarray_init(struct rarray *prar, int elemsize);
 
 // Release "prar->base" but "prar" can still be reused
-void rarray_discard(struct rarray *prar);
+void rarray_release(struct rarray *prar);
 
 // Increase capacity only
 void rarray_grow(struct rarray *prar, int cap);
