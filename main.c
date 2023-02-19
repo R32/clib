@@ -27,15 +27,15 @@ static void t_ucs2() {
 		"\x8B\xE5\x93\x81\x2C\x20\xF0\xA8\xB0\xBB\x41";
 	wchar_t ucs2_copy[32];
 	wchar_t ucs2[] = L"\x4e07\x822c\x7686\x4e0b\x54c1"  L", \xd863\xdc3b"  L"A";
-	// wcs_to_utf8
 	int bytes = ARRAYSIZE(utf8) - 1; // strip '\0'
-	assert(wcstoutf8(NULL     , ucs2) == bytes);
-	assert(wcstoutf8(utf8_copy, ucs2) == bytes);
+	int wslen = ARRAYSIZE(ucs2) - 1;
+	// wcs_to_utf8
+	assert(wcstoutf8(NULL     , ucs2, wslen) == bytes);
+	assert(wcstoutf8(utf8_copy, ucs2,    -1) == bytes);
 	assert(memcmp(utf8_copy, utf8, bytes) == 0);
 	// utf8_to_wcs
-	int wslen = ARRAYSIZE(ucs2) - 1;
-	assert(utf8towcs(NULL     , utf8) == wslen);
-	assert(utf8towcs(ucs2_copy, utf8) == wslen);
+	assert(utf8towcs(NULL     , utf8, bytes) == wslen);
+	assert(utf8towcs(ucs2_copy, utf8,    -1) == wslen);
 	assert(memcmp(ucs2_copy, ucs2, wslen * sizeof(wchar_t)) == 0);
 }
 
@@ -458,8 +458,8 @@ void t_wcsbuf()
 	fseek(stream, 0, SEEK_SET);
 	assert(fread(bptr, sizeof(char), bsize, stream) == bsize);
 	bptr[bsize] = 0;
-	assert(utf8towcs(NULL, bptr) == buf.length);
-	assert(utf8towcs(ptr, bptr) == buf.length);
+	assert(utf8towcs(NULL, bptr, -1) == buf.length);
+	assert(utf8towcs(ptr, bptr, -1) == buf.length);
 	assert(wcslen(ptr) == wcslen(result) && wcscmp(ptr, result) == 0);
 	free(bptr);
 	fclose(stream);

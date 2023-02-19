@@ -37,17 +37,18 @@ static uint32_t inline decode(uint32_t *state, uint32_t *codep, uint32_t byte)
 	return *state;
 }
 
-/*
-* SPDX-License-Identifier: GPL-2.0
-*/
-int utf8towcs(wchar_t *out, const unsigned char *src)
+
+int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 {
 	uint32_t byte;
 	uint32_t codep = 0;
 	uint32_t state = 0;
 	int i = 0;
+	if (len < 0)
+		len = 0x7fffffff;
+	const unsigned char *max = src + len;
 	if (out == NULL) {
-		while (byte = *src++) {
+		while (src < max && (byte = *src++)) {
 			decode(&state, &codep, byte);
 			if (state == UTF8_REJECT) {
 				return -1; // ERROR
@@ -59,59 +60,65 @@ int utf8towcs(wchar_t *out, const unsigned char *src)
 				}
 			}
 		}
-	} else {
-		while (byte = *src++) {
-			decode(&state, &codep, byte);
-			if (state == UTF8_REJECT) {
-				return -1; // ERROR
-			} else if (state == UTF8_ACCEPT) {
-				if (codep < 0xFFFF) {
-					out[i++] = (wchar_t)codep;
-				} else {
-					out[i++] = (wchar_t) (0xD7C0 + (codep >> 10));
-					out[i++] = (wchar_t) (0xDC00 + (codep & 0x3FF));
-				}
+		return i;
+	}
+	while (src < max && (byte = *src++)) {
+		decode(&state, &codep, byte);
+		if (state == UTF8_REJECT) {
+			return -1; // ERROR
+		} else if (state == UTF8_ACCEPT) {
+			if (codep < 0xFFFF) {
+				out[i++] = (wchar_t)codep;
+			} else {
+				out[i++] = (wchar_t) (0xD7C0 + (codep >> 10));
+				out[i++] = (wchar_t) (0xDC00 + (codep & 0x3FF));
 			}
 		}
 	}
 	return i;
 }
 
-int wcstoutf8(unsigned char *out, const wchar_t *src)
+int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 {
 	wchar_t c = 0;
 	int i = 0;
+	if (len < 0)
+		len = 0x7fffffff;
+	const wchar_t *max = src + len;
 	if (out == NULL) {
-		while (c = *src++) {
+		while (src < max && (c = *src++)) {
 			if (c < 0x80) {
 				i++;
 			} else if (c < 0x800) {
 				i += 2;
 			} else if (c >= 0xD800 && c <= 0xDFFF) { // surrogate pair
-				src ++;
+				if (++src == max)
+					break;
 				i += 4;
 			} else {
 				i += 3;
 			}
 		}
-	} else {
-		while (c = *src++) {
-			if (c < 0x80) {
-				out[i++] = (unsigned char)c;
-			} else if (c < 0x800) {
-				out[i++] = (unsigned char)(0xC0 | (c >> 6));
-				out[i++] = (unsigned char)(0x80 | (c & 63));
-			} else if (c >= 0xD800 && c <= 0xDFFF) {
-				int k = ((((int)c - 0xD800) << 10) | (((int)*src++) - 0xDC00)) + 0x10000;
-				out[i++] = (unsigned char)(0xF0 |(k>>18));
-				out[i++] = (unsigned char)(0x80 | ((k >> 12) & 63));
-				out[i++] = (unsigned char)(0x80 | ((k >> 6) & 63));
-				out[i++] = (unsigned char)(0x80 | (k & 63));
-			} else {
-				out[i++] = (unsigned char)(0xE0 | (c >> 12));
-				out[i++] = (unsigned char)(0x80 | ((c >> 6) & 63));
-				out[i++] = (unsigned char)(0x80 | (c & 63));
-			}
+		return i;
+	}
+	while (src < max && (c = *src++)) {
+		if (c < 0x80) {
+			out[i++] = (unsigned char)c;
+		} else if (c < 0x800) {
+			out[i++] = (unsigned char)(0xC0 | (c >> 6));
+			out[i++] = (unsigned char)(0x80 | (c & 63));
+		} else if (c >= 0xD800 && c <= 0xDFFF) {
+			int k = ((((int)c - 0xD800) << 10) | (((int)*src++) - 0xDC00)) + 0x10000;
+			if (src == max)
+				break;
+			out[i++] = (unsigned char)(0xF0 |(k>>18));
+			out[i++] = (unsigned char)(0x80 | ((k >> 12) & 63));
+			out[i++] = (unsigned char)(0x80 | ((k >> 6) & 63));
+			out[i++] = (unsigned char)(0x80 | (k & 63));
+		} else {
+			out[i++] = (unsigned char)(0xE0 | (c >> 12));
+			out[i++] = (unsigned char)(0x80 | ((c >> 6) & 63));
+			out[i++] = (unsigned char)(0x80 | (c & 63));
 		}
 	}
 	return i;

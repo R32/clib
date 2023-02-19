@@ -7,15 +7,14 @@
 
 #include "rclibs.h"
 C_FUNCTION_BEGIN
+
 /*
-NOTE:
- 1. You should call `setlocale(LC_CTYPE, "")` before using.
- 2. You might have to add '\0' at end of `out`.
+**NOTE: You have to add '\0' at end of `out`.
 */
 
-int wcstoutf8(unsigned char *out, const wchar_t *src);
+int wcstoutf8(unsigned char *out, const wchar_t *src, int len);
 
-int utf8towcs(wchar_t *out, const unsigned char *src);
+int utf8towcs(wchar_t *out, const unsigned char *src, int len);
 
 C_FUNCTION_END
 #endif
