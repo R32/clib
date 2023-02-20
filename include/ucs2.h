@@ -9,8 +9,14 @@
 C_FUNCTION_BEGIN
 
 /*
-**NOTE: You have to add '\0' at end of `out`.
-*/
+ * @param len : If this parameter is -1, the function processes the entire input string,
+ * including the terminating null character. Therefore, the resulting string has a terminating null character,
+ * and the length returned by the function includes this character
+ *
+ * If this parameter is set to a positive integer, the function processes exactly the specified
+ * number of bytes. If the provided size does not include a terminating null character,
+ * the resulting string is not null-terminated, and the returned length does not include this character.
+ */
 
 int wcstoutf8(unsigned char *out, const wchar_t *src, int len);
 

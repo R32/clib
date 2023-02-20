@@ -44,11 +44,10 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 	uint32_t codep = 0;
 	uint32_t state = 0;
 	int i = 0;
-	if (len < 0)
-		len = 0x7fffffff;
-	const unsigned char *max = src + len;
+	const unsigned char *max = src + (len < 0 ? 0x7fffffff : len);
 	if (out == NULL) {
-		while (src < max && (byte = *src++)) {
+		while (src < max) {
+			byte = *src++;
 			decode(&state, &codep, byte);
 			if (state == UTF8_REJECT) {
 				return -1; // ERROR
@@ -59,10 +58,13 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 					i += 2;
 				}
 			}
+			if (!byte && len < 0)
+				break;
 		}
 		return i;
 	}
-	while (src < max && (byte = *src++)) {
+	while (src < max) {
+		byte = *src++;
 		decode(&state, &codep, byte);
 		if (state == UTF8_REJECT) {
 			return -1; // ERROR
@@ -74,19 +76,20 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 				out[i++] = (wchar_t) (0xDC00 + (codep & 0x3FF));
 			}
 		}
+		if (!byte && len < 0)
+			break;
 	}
 	return i;
 }
 
 int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 {
-	wchar_t c = 0;
+	unsigned int c = 0;
 	int i = 0;
-	if (len < 0)
-		len = 0x7fffffff;
-	const wchar_t *max = src + len;
+	const wchar_t *max = src + (len < 0 ? 0x7fffffff : len);
 	if (out == NULL) {
-		while (src < max && (c = *src++)) {
+		while (src < max) {
+			c = *src++;
 			if (c < 0x80) {
 				i++;
 			} else if (c < 0x800) {
@@ -98,10 +101,13 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			} else {
 				i += 3;
 			}
+			if (!c && len < 0)
+				break;
 		}
 		return i;
 	}
-	while (src < max && (c = *src++)) {
+	while (src < max) {
+		c = *src++;
 		if (c < 0x80) {
 			out[i++] = (unsigned char)c;
 		} else if (c < 0x800) {
@@ -120,6 +126,8 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			out[i++] = (unsigned char)(0x80 | ((c >> 6) & 63));
 			out[i++] = (unsigned char)(0x80 | (c & 63));
 		}
+		if (!c && len < 0)
+			break;
 	}
 	return i;
 }

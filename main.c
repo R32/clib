@@ -31,11 +31,11 @@ static void t_ucs2() {
 	int wslen = ARRAYSIZE(ucs2) - 1;
 	// wcs_to_utf8
 	assert(wcstoutf8(NULL     , ucs2, wslen) == bytes);
-	assert(wcstoutf8(utf8_copy, ucs2,    -1) == bytes);
+	assert(wcstoutf8(utf8_copy, ucs2,    -1) == bytes + 1);
 	assert(memcmp(utf8_copy, utf8, bytes) == 0);
 	// utf8_to_wcs
 	assert(utf8towcs(NULL     , utf8, bytes) == wslen);
-	assert(utf8towcs(ucs2_copy, utf8,    -1) == wslen);
+	assert(utf8towcs(ucs2_copy, utf8,    -1) == wslen + 1);
 	assert(memcmp(ucs2_copy, ucs2, wslen * sizeof(wchar_t)) == 0);
 }
 
@@ -458,8 +458,8 @@ void t_wcsbuf()
 	fseek(stream, 0, SEEK_SET);
 	assert(fread(bptr, sizeof(char), bsize, stream) == bsize);
 	bptr[bsize] = 0;
-	assert(utf8towcs(NULL, bptr, -1) == buf.length);
-	assert(utf8towcs(ptr, bptr, -1) == buf.length);
+	assert(utf8towcs(NULL, bptr, -1) == buf.length + 1);
+	assert(utf8towcs(ptr, bptr, -1) == buf.length + 1);
 	assert(wcslen(ptr) == wcslen(result) && wcscmp(ptr, result) == 0);
 	free(bptr);
 	fclose(stream);
