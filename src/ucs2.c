@@ -49,35 +49,35 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 		while (src < max) {
 			byte = *src++;
 			decode(&state, &codep, byte);
-			if (state == UTF8_REJECT) {
-				return -1; // ERROR
-			} else if (state == UTF8_ACCEPT) {
+			if (state == UTF8_ACCEPT) {
 				if (codep < 0xFFFF) {
-					++ i;
+					++i;
 				} else {
 					i += 2;
 				}
+				if (!byte && len < 0)
+					break;
+			} else if (state == UTF8_REJECT) {
+				return 0; // ERROR
 			}
-			if (!byte && len < 0)
-				break;
 		}
 		return i;
 	}
 	while (src < max) {
 		byte = *src++;
 		decode(&state, &codep, byte);
-		if (state == UTF8_REJECT) {
-			return -1; // ERROR
-		} else if (state == UTF8_ACCEPT) {
+		if (state == UTF8_ACCEPT) {
 			if (codep < 0xFFFF) {
 				out[i++] = (wchar_t)codep;
 			} else {
-				out[i++] = (wchar_t) (0xD7C0 + (codep >> 10));
-				out[i++] = (wchar_t) (0xDC00 + (codep & 0x3FF));
+				out[i++] = (wchar_t)(0xD7C0 + (codep >> 10));
+				out[i++] = (wchar_t)(0xDC00 + (codep & 0x3FF));
 			}
+			if (!byte && len < 0)
+				break;
+		} else if (state == UTF8_REJECT) {
+			return 0; // ERROR
 		}
-		if (!byte && len < 0)
-			break;
 	}
 	return i;
 }
@@ -92,6 +92,8 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			c = *src++;
 			if (c < 0x80) {
 				i++;
+				if (!c && len < 0)
+					break;
 			} else if (c < 0x800) {
 				i += 2;
 			} else if (c >= 0xD800 && c <= 0xDFFF) { // surrogate pair
@@ -101,8 +103,6 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			} else {
 				i += 3;
 			}
-			if (!c && len < 0)
-				break;
 		}
 		return i;
 	}
@@ -110,6 +110,8 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 		c = *src++;
 		if (c < 0x80) {
 			out[i++] = (unsigned char)c;
+			if (!c && len < 0)
+				break;
 		} else if (c < 0x800) {
 			out[i++] = (unsigned char)(0xC0 | (c >> 6));
 			out[i++] = (unsigned char)(0x80 | (c & 63));
@@ -126,8 +128,6 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			out[i++] = (unsigned char)(0x80 | ((c >> 6) & 63));
 			out[i++] = (unsigned char)(0x80 | (c & 63));
 		}
-		if (!c && len < 0)
-			break;
 	}
 	return i;
 }
