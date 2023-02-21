@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\crlf_counter.c" />
     <ClCompile Include="..\..\src\rarray.c" />
     <ClCompile Include="..\..\src\rbtree.c" />
     <ClCompile Include="..\..\src\rstream.c" />

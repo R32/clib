@@ -14,7 +14,7 @@ C_FUNCTION_BEGIN
  * and the length returned by the function includes this character
  *
  * If this parameter is set to a positive integer, the function processes exactly the specified
- * number of bytes. If the provided size does not include a terminating null character,
+ * number of characters. If the provided size does not include a terminating null character,
  * the resulting string is not null-terminated, and the returned length does not include this character.
  */
 
