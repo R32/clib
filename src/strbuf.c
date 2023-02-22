@@ -92,8 +92,10 @@ void strbuf_append_char(struct strbuf *buf, char c)
 
 void strbuf_append_string(struct strbuf *buf, char *string, int len)
 {
-	if (!string || len <= 0)
+	if (!string)
 		return;
+	if (len < 0)
+		len = strlen(string);
 	buf->length += len;
 	struct chunk *chk = chk_head(buf);
 	if (chk) {

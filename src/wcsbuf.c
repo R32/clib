@@ -68,8 +68,10 @@ void wcsbuf_append_char(struct wcsbuf *buf, wchar_t c)
 
 void wcsbuf_append_string(struct wcsbuf *buf, wchar_t *string, int len)
 {
-	if (!string || len <= 0)
+	if (!string)
 		return;
+	if (len < 0)
+		len = wcslen(string);
 	buf->length += len;
 	struct chunk *chk = chk_head(buf);
 	if (chk) {
