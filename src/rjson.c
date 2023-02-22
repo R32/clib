@@ -101,7 +101,7 @@ struct rjson_value *rjvalue_from_wcs(struct rjson *rj, wchar_t *wcs, int len)
 {
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
-	vitem->value.rjwcs = rj_wchars_fromwcs(rj, wcs, len);
+	vitem->value.string = rj_wchars_fromwcs(rj, wcs, len);
 	return &vitem->value;
 }
 
@@ -109,7 +109,7 @@ struct rjson_value *rjvalue_from_cstr(struct rjson *rj, char *str, int len)
 {
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
-	vitem->value.rjwcs = rj_wchars_fromstr(rj, str, len);
+	vitem->value.string = rj_wchars_fromstr(rj, str, len);
 	return &vitem->value;
 }
 
@@ -117,7 +117,7 @@ struct rjson_value *rjvalue_from_lwchars(struct rjson *rj, struct lwchars *lwcs)
 {
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
-	vitem->value.rjwcs = lwcs->wcs;
+	vitem->value.string = lwcs->wcs;
 	return &vitem->value;
 }
 
@@ -280,7 +280,7 @@ static void output_compact(struct wcsbuf *buffer, struct rjson_value *value)
 		break;
 	case KString:
 		ADD_CHAR('"');
-		add_with_unescape(buffer, value->rjwcs, rj_wchars_length(value->rjwcs));
+		add_with_unescape(buffer, value->string, rj_wchars_length(value->string));
 		ADD_CHAR('"');
 		break;
 	case KObject:
@@ -334,7 +334,7 @@ static void output_normal(struct wcsbuf *buffer, struct rjson_value *value, int 
 		break;
 	case KString:
 		ADD_CHAR('"');
-		add_with_unescape(buffer, value->rjwcs, rj_wchars_length(value->rjwcs));
+		add_with_unescape(buffer, value->string, rj_wchars_length(value->string));
 		ADD_CHAR('"');
 		break;
 	case KObject:

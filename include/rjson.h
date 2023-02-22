@@ -34,7 +34,7 @@ struct rjson_value {
 	union {
 		int                         istrue; // bool
 		double                      number; // number
-		rj_wchars                    rjwcs; // String
+		rj_wchars                   string; // String
 		struct {                            // if KArray or KObject
 			struct rjson_vitem   *head;
 			struct rjson_vitem   *tail;
