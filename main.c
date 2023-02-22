@@ -549,6 +549,44 @@ void t_rarray()
 	rarray_release(&array);
 }
 
+#include "rjson.h"
+void t_rjson()
+{
+	struct rjson rjson;
+	#define mk_number(n)     rjvalue_number(&rjson, n)
+	#define mk_bool(b)       rjvalue_bool(&rjson, b)
+	#define mk_wchars(ws)    rjvalue_from_wcs(&rjson, ws, -1)
+
+	rjson_init(&rjson);
+	struct rjson_value *array = rjvalue_array_new(&rjson);
+	rjvalue_object_add(array, VITEM_OF(mk_number(1)));
+	rjvalue_object_add(array, VITEM_OF(mk_number(2)));
+	rjvalue_object_add(array, VITEM_OF(mk_number(3)));
+	rjvalue_object_set(&rjson, NULL, L"what.is.love", array);
+
+	struct rjson_value *object = rjvalue_object_new(&rjson);
+	rjvalue_object_set(&rjson, object, L"a",   mk_wchars(L"A"));
+	rjvalue_object_set(&rjson, object, L"b.c", mk_wchars(L"BC"));
+	rjvalue_object_set(&rjson, object, L"d",   mk_wchars(L"D"));
+	rjvalue_object_set(&rjson, NULL, L"todo.list", object);
+
+	rjvalue_object_set(&rjson, NULL, L"todo.qwert", mk_number(101));
+	rjvalue_object_set(&rjson, NULL, L"bool", mk_bool(1));
+	rjvalue_object_set(&rjson, NULL, L"bool", mk_bool(0));
+	rjvalue_object_set(&rjson, NULL, L"name", mk_wchars(L"Akuma's \"tek\"ken"));
+	rjvalue_object_set(&rjson, NULL, L"number", mk_number(3.1415926));
+
+	//rjson_print(&rjson,  0, stdout);
+	//rjson_print(&rjson, -1, stdout);
+
+	for (int i = 0; i < array->length; i++) {
+		assert(rjvalue_array_get(array, i)->number == (i + 1.0));
+	}
+	assert(rjvalue_object_get(rjson.value, L"todo.qwert")->number == 101.);
+	assert(rjvalue_object_get(rjson.value, L"bool")->istrue == 0);
+	assert(rjvalue_object_get(rjson.value, L"what.is.love") == array);
+	rjson_release(&rjson);
+}
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
@@ -557,6 +595,7 @@ int main(int argc, char** args) {
 	t_strbuf();
 	t_wcsbuf();
 	t_rarray();
+	t_rjson();
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();

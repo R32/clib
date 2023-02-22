@@ -53,8 +53,10 @@
 #ifdef _MSC_VER
 #   define snprintf _snprintf
 #   define ALIGNED_(x) __declspec(align(x))
+#   define VLADecl(type, name, len) type *name = _alloca(sizeof(type) * len)
 #else
 #   define ALIGNED_(x) __attribute__ ((aligned(x)))
+#   define VLADecl(type, name, len) type name[len]
 #endif
 
 #ifndef ARRAYSIZE

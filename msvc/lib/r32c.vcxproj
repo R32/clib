@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\src\crlf_counter.c" />
     <ClCompile Include="..\..\src\rarray.c" />
     <ClCompile Include="..\..\src\rbtree.c" />
+    <ClCompile Include="..\..\src\rjson.c" />
     <ClCompile Include="..\..\src\rstream.c" />
     <ClCompile Include="..\..\src\slist.c" />
     <ClCompile Include="..\..\src\strbuf.c" />
