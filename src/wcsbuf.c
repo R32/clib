@@ -122,9 +122,9 @@ void wcsbuf_append_float(struct wcsbuf *buf, float f, int fixed)
 	wchar_t array[16];
 	int len;
 	if (fixed < 0) {
-		len = swprintf(array, 16, L"%f"  ,        f + FLT_EPSILON);
+		len = swprintf(array, 16, L"%f"  ,        f);
 	} else {
-		len = swprintf(array, 16, L"%.*f", fixed, f + FLT_EPSILON);
+		len = swprintf(array, 16, L"%.*f", fixed, f);
 	}
 	wcsbuf_append_string(buf, array, trim_tail_zero(array, len));
 }

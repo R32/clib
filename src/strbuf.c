@@ -146,9 +146,9 @@ void strbuf_append_float(struct strbuf *buf, float f, int fixed)
 	char array[16];
 	int len;
 	if (fixed < 0) {
-		len = snprintf(array, 16, "%f"  ,        f + FLT_EPSILON);
+		len = snprintf(array, 16, "%f"  ,        f);
 	} else {
-		len = snprintf(array, 16, "%.*f", fixed, f + FLT_EPSILON);
+		len = snprintf(array, 16, "%.*f", fixed, f);
 	}
 	strbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
