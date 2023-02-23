@@ -51,7 +51,9 @@
 #endif
 
 #ifdef _MSC_VER
-#   define snprintf _snprintf
+#   ifndef snprintf
+#       define snprintf _snprintf
+#   endif
 #   define ALIGNED_(x) __declspec(align(x))
 #   define VLADecl(type, name, len) type *name = _alloca(sizeof(type) * len)
 #else

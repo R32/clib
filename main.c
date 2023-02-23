@@ -382,13 +382,13 @@ void t_strbuf()
 		strbuf_append_char(&buf, '\n');
 		strbuf_append_string(&buf, TEXT, strlen(TEXT));
 	}
-	strbuf_append_double(&buf, 3.1415926535897984626, -1);
+	strbuf_append_double(&buf, 3.1415926535897984626, 17);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_float(&buf, 3.1415926535f, -1);
+	strbuf_append_float(&buf, 3.1415926535f, 9);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_double(&buf, 3.14, -1);
+	strbuf_append_double(&buf, 3.14, 17);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_float(&buf, 3.f, -1);
+	strbuf_append_float(&buf, 3.f, 9);
 	strbuf_append_char(&buf, '\n');
 
 	char *result = "A101\n" TEXT "B102\n" TEXT "C103\n" TEXT
@@ -428,13 +428,13 @@ void t_wcsbuf()
 		wcsbuf_append_char(&buf, '\n');
 		wcsbuf_append_string(&buf, TEXT, wcslen(TEXT));
 	}
-	wcsbuf_append_double(&buf, 3.1415926535897984626, -1);
+	wcsbuf_append_double(&buf, 3.1415926535897984626, 17);
 	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_float(&buf, 3.1415926535f, -1);
+	wcsbuf_append_float(&buf, 3.1415926535f, 9);
 	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_double(&buf, 3.14, -1);
+	wcsbuf_append_double(&buf, 3.14, 17);
 	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_float(&buf, 3.f, -1);
+	wcsbuf_append_float(&buf, 3.f, 9);
 	wcsbuf_append_char(&buf, '\n');
 
 #	define HANG_ZI L"中文汉字\n"

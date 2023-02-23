@@ -8,7 +8,7 @@ LIB      := libr32c.a
 CFLAGS   := -fshort-wchar
 INCLUDES := -I$(INC)
 OBJS     := slist.o rbtree.o ucs2.o tinyalloc.o strbuf.o wcsbuf.o rarray.o \
-            rstream.o crlf_counter.o rjson.o
+            rstream.o crlf_counter.o rjson.o rjson_parser_lex.o rjson_parser_slr.o \
 
 ifdef mingw
     CC   := i686-w64-mingw32-gcc
@@ -63,3 +63,5 @@ $(OBJ)/rarray.o: rarray.c rarray.h
 $(OBJ)/rstream.o: rstream.c rstream.h rlex.h
 $(OBJ)/crlf_counter.o: crlf_counter.c crlf_counter.h
 $(OBJ)/rjson.o: rjson.c rjson.h
+$(OBJ)/rjson_parser_lex.o: rjson_parser_lex.c rjson.h
+$(OBJ)/rjson_parser_slr.o: rjson_parser_slr.c rjson.h

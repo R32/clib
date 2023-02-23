@@ -1,0 +1,2 @@
+*.lex linguist-language=c
+*.slr linguist-language=c

@@ -3,6 +3,7 @@
  */
 #include "rjson.h"
 
+#define INT_DIV_WCHAR          (sizeof(int) / sizeof(wchar_t))
 #define rj_lenwcs_new(rj, n)   bumpalloc(&rj->wcspool, (n) * sizeof(wchar_t))
 #define rj_vitem_new(rj)       fixedalloc(&rj->nodepool)
 
@@ -11,7 +12,7 @@ rj_wchars rj_wchars_fromwcs(struct rjson *rj, wchar_t *src, int len)
 	if (len < 0) {
 		len = wcslen(src); // without '\0'
 	}
-	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + sizeof(int) / sizeof(wchar_t)));
+	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + INT_DIV_WCHAR));
 	lwcs->len = len;
 	wmemcpy(lwcs->wcs, src, len);
 	lwcs->wcs[len] = 0;
@@ -22,9 +23,21 @@ rj_wchars rj_wchars_fromstr(struct rjson *rj, char *src, int len)
 {
 	if (len < 0)
 		len = utf8towcs(NULL, src, -1) - 1; // without '\0'
-	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + sizeof(int) / sizeof(wchar_t)));
+	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + INT_DIV_WCHAR));
 	lwcs->len = len;
 	utf8towcs(lwcs->wcs, src, len);
+	lwcs->wcs[len] = 0;
+	return lwcs->wcs;
+}
+
+rj_wchars rj_wchars_flush(struct rjson *rj, struct wcsbuf *buffer)
+{
+	if (!buffer)
+		buffer = &rj->buffer;
+	int len = buffer->length;
+	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + INT_DIV_WCHAR));
+	wcsbuf_to_string(buffer, lwcs->wcs);
+	lwcs->len = len;
 	lwcs->wcs[len] = 0;
 	return lwcs->wcs;
 }
@@ -45,7 +58,7 @@ int rj_wchars_length(rj_wchars wcs)
 void rjson_init(struct rjson *rj)
 {
 	*rj = (struct rjson){0}; // memset(rj, 0, sizeof(struct rjson));
-	rj->buffer.csize = 128;
+	rj->buffer.csize = 1024;
 	rj->wcspool.chksize = 4;
 	rj->nodepool.chksize = 4;
 	rj->nodepool.size = sizeof(struct rjson_vitem);
@@ -56,12 +69,14 @@ void rjson_release(struct rjson *rj)
 	wcsbuf_release(&rj->buffer);
 	bumpdestroy(&rj->wcspool);
 	fixeddestroy(&rj->nodepool);
+	rj->value = NULL;
 }
 
 struct rjson_value *rjvalue_null(struct rjson *rj)
 {
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KNull;
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
@@ -70,6 +85,7 @@ struct rjson_value *rjvalue_bool(struct rjson *rj, int istrue)
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KBool;
 	vitem->value.istrue = istrue;
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
@@ -78,6 +94,7 @@ struct rjson_value *rjvalue_number(struct rjson *rj, double number)
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KNumber;
 	vitem->value.number = number;
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
@@ -102,6 +119,7 @@ struct rjson_value *rjvalue_from_wcs(struct rjson *rj, wchar_t *wcs, int len)
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
 	vitem->value.string = rj_wchars_fromwcs(rj, wcs, len);
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
@@ -110,6 +128,7 @@ struct rjson_value *rjvalue_from_cstr(struct rjson *rj, char *str, int len)
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
 	vitem->value.string = rj_wchars_fromstr(rj, str, len);
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
@@ -118,10 +137,12 @@ struct rjson_value *rjvalue_from_lwchars(struct rjson *rj, struct lwchars *lwcs)
 	struct rjson_vitem *vitem = rj_vitem_new(rj);
 	vitem->value.kind = KString;
 	vitem->value.string = lwcs->wcs;
+	vitem->next = NULL;
 	return &vitem->value;
 }
 
 // object->kind could be KObject or KArray
+// Adds `child` at the end.
 void rjvalue_object_add(struct rjson_value *object, struct rjson_vitem *child)
 {
 	if (object->kind < KObject)
@@ -132,6 +153,18 @@ void rjvalue_object_add(struct rjson_value *object, struct rjson_vitem *child)
 	else
 		object->tail->next = child;
 	object->tail = child;
+	object->length++;
+}
+
+// Adds `child` at the beginning.
+void rjvalue_object_push(struct rjson_value *object, struct rjson_vitem *child)
+{
+	if (object->kind < KObject)
+		return;
+	child->next = object->head;
+	object->head = child;
+	if (object->tail == NULL)
+		object->tail = child;
 	object->length++;
 }
 
