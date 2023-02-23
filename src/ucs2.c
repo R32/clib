@@ -44,7 +44,7 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 	uint32_t codep = 0;
 	uint32_t state = 0;
 	int i = 0;
-	const unsigned char *max = len < 0 ? (char *)UINTPTR_MAX : src + len;
+	const unsigned char *max = len < 0 ? (const unsigned char *)UINTPTR_MAX : src + len;
 	if (out == NULL) {
 		while (src < max) {
 			byte = *src++;
@@ -86,7 +86,7 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 {
 	unsigned int c = 0;
 	int i = 0;
-	const wchar_t *max = len < 0 ? (wchar_t *)UINTPTR_MAX : src + len;
+	const wchar_t *max = len < 0 ? (const wchar_t *)UINTPTR_MAX : src + len;
 	if (out == NULL) {
 		while (src < max) {
 			c = *src++;
