@@ -6,6 +6,7 @@
  * most of this code is taken from the hashlink/buffer.c by Haxe Foundation
  */
 #include <stdio.h>
+#include <float.h>
 #include <stdlib.h>
 #include <string.h>
 #include "wcsbuf.h"
@@ -119,18 +120,24 @@ static int trim_tail_zero(wchar_t *ptr, int len)
 void wcsbuf_append_float(struct wcsbuf *buf, float f, int fixed)
 {
 	wchar_t array[16];
-	if (fixed < 0)
-		fixed = 9;
-	int len = swprintf(array, 16, L"%.*f", fixed, f);
+	int len;
+	if (fixed < 0) {
+		len = swprintf(array, 16, L"%f"  ,        f + FLT_EPSILON);
+	} else {
+		len = swprintf(array, 16, L"%.*f", fixed, f + FLT_EPSILON);
+	}
 	wcsbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 
 void wcsbuf_append_double(struct wcsbuf *buf, double lf, int fixed)
 {
 	wchar_t array[32];
-	if (fixed < 0)
-		fixed = 17;
-	int len = swprintf(array, 32, L"%.*g", fixed, lf);
+	int len;
+	if (fixed < 0) {
+		len = swprintf(array, 32, L"%g"  ,        lf + DBL_EPSILON);
+	} else {
+		len = swprintf(array, 32, L"%.*g", fixed, lf + DBL_EPSILON);
+	}
 	wcsbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 

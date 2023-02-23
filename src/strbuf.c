@@ -6,6 +6,7 @@
  * most of this code is taken from the hashlink/buffer.c by Haxe Foundation
  */
 #include <stdio.h>
+#include <float.h>
 #include <stdlib.h>
 #include <string.h>
 #include "strbuf.h"
@@ -143,18 +144,24 @@ static int trim_tail_zero(char *ptr, int len)
 void strbuf_append_float(struct strbuf *buf, float f, int fixed)
 {
 	char array[16];
-	if (fixed < 0)
-		fixed = 9;
-	int len = snprintf(array, 16, "%.*f", fixed, f);
+	int len;
+	if (fixed < 0) {
+		len = snprintf(array, 16, "%f"  ,        f + FLT_EPSILON);
+	} else {
+		len = snprintf(array, 16, "%.*f", fixed, f + FLT_EPSILON);
+	}
 	strbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 
 void strbuf_append_double(struct strbuf *buf, double lf, int fixed)
 {
 	char array[32];
-	if (fixed < 0)
-		fixed = 17;
-	int len = snprintf(array, 32, "%.*g", fixed, lf);
+	int len;
+	if (fixed < 0) {
+		len = snprintf(array, 32, "%g"  ,        lf + DBL_EPSILON);
+	} else {
+		len = snprintf(array, 32, "%.*g", fixed, lf + DBL_EPSILON);
+	}
 	strbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 
