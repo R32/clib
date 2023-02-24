@@ -239,7 +239,7 @@ void t_tinyalloc() {
 	for (int j = 0; j < ARRAYSIZE(big); j++) {
 		aptr[i + j] = __alloc(big[j]);
 	}
-	assert(chunk_len(root.chunk_head) > 0);
+	assert(chunk_len(root.base.chunk_head) > 0);
 
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), ptr_intersect);
@@ -261,7 +261,7 @@ void t_tinyalloc() {
 
 	tinyreset(&root);
 	tinydestroy(&root);
-	assert(root.chunk_head == NULL);
+	assert(root.base.chunk_head == NULL);
 }
 
 int bump_intersect(const void* aa, const void* bb)
@@ -310,7 +310,7 @@ void t_bumpalloc()
 	for (int j = 0; j < ARRAYSIZE(big); j++) {
 		aptr[i + j] = __alloc(big[j]);
 	}
-	assert(chunk_len(bump.chunk_head) > 0);
+	assert(chunk_len(bump.base.chunk_head) > 0);
 
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), bump_intersect);
@@ -323,7 +323,7 @@ void t_bumpalloc()
 	qsort(aptr, ASIZE, sizeof(aptr[0]), bump_intersect);
 
 	bumpdestroy(&bump);
-	assert(bump.chunk_head == NULL);
+	assert(bump.base.chunk_head == NULL);
 }
 
 int fixed_intersect(const void* aa, const void* bb)
@@ -353,10 +353,10 @@ void t_fixedalloc()
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
 
-	int len = chunk_len(fixed.chunk_head);
+	int len = chunk_len(fixed.base.chunk_head);
 	for (int i = 0; i < ASIZE / 2; i++) fixedfree(&fixed, aptr[i]);
 	for (int i = 0; i < ASIZE / 2; i++) aptr[i] = fixedalloc(&fixed);
-	assert(len > 0 && len == chunk_len(fixed.chunk_head));
+	assert(len > 0 && len == chunk_len(fixed.base.chunk_head));
 	shuffle((void**)aptr, ASIZE);
 	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
 
@@ -368,7 +368,7 @@ void t_fixedalloc()
 	qsort(aptr, ASIZE, sizeof(aptr[0]), fixed_intersect);
 
 	fixeddestroy(&fixed);
-	assert(fixed.chunk_head == NULL);
+	assert(fixed.base.chunk_head == NULL);
 }
 
 void t_strbuf()

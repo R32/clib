@@ -3,8 +3,6 @@
  */
 
 #include "rarray.h"
-#include <stdlib.h>
-#include <string.h>
 
 struct rarray_head {
 	int len;
@@ -13,7 +11,7 @@ struct rarray_head {
 };
 
 #define hd_to_base(head)     ((prarray_base)(head)->data)
-#define hd_from_base(base)   (container_of(base, struct rarray_head, data))
+#define hd_from_base(base)   (container_of(((void *)(base)), struct rarray_head, data))
 
 static void phead_realloc(struct rarray *prar, int cap, int len)
 {

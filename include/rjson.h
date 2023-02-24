@@ -5,9 +5,8 @@
 #ifndef R_JSON_H
 #define R_JSON_H
 
-#include <wchar.h>
-#include "ucs2.h"
 #include "rclibs.h"
+#include "ucs2.h"
 #include "wcsbuf.h"
 #include "tinyalloc.h"
 #include "rlex.h"
@@ -23,7 +22,8 @@ struct lwchars {
 	wchar_t wcs[0];
 };
 
-#define LWCHARS_OF(rs)                      container_of(rs, struct lwchars, wcs)
+#define LWCHARS_OF(rs)                      container_of(((void *)(rs)), struct lwchars, wcs)
+#define rj_wchars_length(rs)                (LWCHARS_OF(rs)->len)
 
 enum rjson_kind {
 	KNull = 1,
@@ -92,8 +92,6 @@ rj_wchars rj_wchars_fromstr(struct rjson *rj, char *src, int len);
 rj_wchars rj_wchars_alloc(struct rjson *rj, int len);
 
 rj_wchars rj_wchars_flush(struct rjson *rj, struct wcsbuf *buffer);
-
-int rj_wchars_length(rj_wchars wcs);
 
 // rjson_value
 

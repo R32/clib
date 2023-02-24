@@ -34,7 +34,7 @@ struct chunk {
 
 #define the_base(ator)     (&ator->base)
 #define chk_next(chk)      ((chk)->next)
-#define chk_head(root)     ((root)->chunk_head)
+#define chk_head(base)     ((base)->chunk_head)
 #define chk_dataptr(chk)   ((chk)->mem + (chk)->pos)
 
 static inline void chunk_add(struct chunk *chk, struct allocator_base *base)
@@ -127,9 +127,11 @@ void tinyalloc_init(struct tinyalloc_root *root, int chksize)
 {
 	if (chksize < 8)
 		chksize = 8;
-	root->chksize = chksize;
-	root->metasize = sizeof(struct meta);
-	chk_head(root) = NULL;
+	root->base = (struct allocator_base){
+		.chksize = chksize,
+		.metasize = sizeof(struct meta),
+		.chunk_head = NULL
+	};
 	FREE_RESET(root->freelist);
 }
 
@@ -206,9 +208,11 @@ void bumpalloc_init(struct bumpalloc_root *bump, int chksize)
 {
 	if (chksize <= 0)
 		chksize = 1;
-	bump->chksize = chksize;
-	bump->metasize = 0;
-	chk_head(bump) = NULL;
+	bump->base = (struct allocator_base){
+		.chksize = chksize,
+		.metasize = 0,
+		.chunk_head = NULL
+	};
 }
 
 void *bumpalloc(struct bumpalloc_root *bump, int size)
@@ -256,9 +260,11 @@ void fixedalloc_init(struct fixedalloc_root *fixed, int chksize, int size)
 
 	if (chksize <= 0)
 		chksize = 1;
-	fixed->chksize = chksize;
-	fixed->metasize = 0;
-	chk_head(fixed) = NULL;
+	fixed->base = (struct allocator_base){
+		.chksize = chksize,
+		.metasize = 0,
+		.chunk_head = NULL
+	};
 	FIXED_HEAD(fixed) = NULL;
 }
 

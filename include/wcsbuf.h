@@ -3,7 +3,6 @@
  */
 #ifndef R_WCSBUF_H
 #define R_WCSBUF_H
-#include "rclibs.h"
 #include "strbuf.h"
 
 struct wcsbuf { // same as strbuf

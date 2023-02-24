@@ -19,8 +19,6 @@ enum token {
 	OpSub = 12,
 };
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "rjson.h"
 
 // from rjson_parser.lex
@@ -412,6 +410,7 @@ void rjson_parser_release(struct rjson_parser *parser)
 	rjson_release(&parser->json); // buffer, wcspool, nodepool
 	rarray_release(&parser->parray);
 	crlf_release(&parser->crlfcnt);
+	parser->lex.src = NULL;
 }
 
 void rjson_parser_read(struct rjson_parser *parser)

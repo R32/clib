@@ -2,8 +2,6 @@
 #define LEXCHAR unsigned char
 #define rlex_char(lex, i)     (((LEXCHAR *)(lex)->src)[i])
 #define rlex_current(lex)     (((LEXCHAR *)(lex)->src) + (lex)->pos.min)
-#include <stdio.h>
-#include <stdlib.h>
 #include "rjson.h"
 
 enum token {

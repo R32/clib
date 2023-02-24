@@ -28,25 +28,16 @@ struct allocator_base {
 };
 
 struct tinyalloc_root {
-	union {
-		struct allocator_base base;
-		struct allocator_base;
-	};
+	struct allocator_base base;
 	void *freelist[TINYALLOC_FREELIST_MAX + 1];
 };
 
 struct bumpalloc_root {
-	union {
-		struct allocator_base base;
-		struct allocator_base;
-	};
+	struct allocator_base base;
 };
 
 struct fixedalloc_root {
-	union {
-		struct allocator_base base;
-		struct allocator_base;
-	};
+	struct allocator_base base;
 	int size;
 	void *freelist[1];
 };

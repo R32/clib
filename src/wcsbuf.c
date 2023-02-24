@@ -5,10 +5,6 @@
 /*
  * most of this code is taken from the hashlink/buffer.c by Haxe Foundation
  */
-#include <stdio.h>
-#include <float.h>
-#include <stdlib.h>
-#include <string.h>
 #include "wcsbuf.h"
 
 struct chunk {

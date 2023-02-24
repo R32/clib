@@ -48,5 +48,7 @@ int main(int argc, char** argv)
 
 	rjson_parser_release(&parser);
 
+	free(text);
+
 	return 0;
 }

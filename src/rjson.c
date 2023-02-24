@@ -22,10 +22,10 @@ rj_wchars rj_wchars_fromwcs(struct rjson *rj, wchar_t *src, int len)
 rj_wchars rj_wchars_fromstr(struct rjson *rj, char *src, int len)
 {
 	if (len < 0)
-		len = utf8towcs(NULL, src, -1) - 1; // without '\0'
+		len = utf8towcs(NULL, (unsigned char *)src, -1) - 1; // without '\0'
 	struct lwchars *lwcs = rj_lenwcs_new(rj, len + (1 + INT_DIV_WCHAR));
 	lwcs->len = len;
-	utf8towcs(lwcs->wcs, src, len);
+	utf8towcs(lwcs->wcs, (unsigned char *)src, len);
 	lwcs->wcs[len] = 0;
 	return lwcs->wcs;
 }
@@ -50,17 +50,12 @@ rj_wchars rj_wchars_alloc(struct rjson *rj, int len)
 	return lwcs->wcs;
 }
 
-int rj_wchars_length(rj_wchars wcs)
-{
-	return container_of(wcs, struct lwchars, wcs)->len;
-}
-
 void rjson_init(struct rjson *rj)
 {
 	*rj = (struct rjson){0}; // memset(rj, 0, sizeof(struct rjson));
 	rj->buffer.csize = 1024;
-	rj->wcspool.chksize = 4;
-	rj->nodepool.chksize = 4;
+	rj->wcspool.base.chksize = 4;
+	rj->nodepool.base.chksize = 4;
 	rj->nodepool.size = sizeof(struct rjson_vitem);
 }
 

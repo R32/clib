@@ -5,8 +5,12 @@
 #ifndef R_CLIBS_H
 #define R_CLIBS_H
 
-#include <locale.h>
+#include <stdio.h>
+#include <float.h>
 #include <wchar.h>
+#include <string.h>
+#include <stdlib.h>
+#include <locale.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>

@@ -32,10 +32,11 @@ clib
   }
   rarray_discard(&array);
   ```
-
 - ~~`slist.h`: Singly Linked List.~~ Useless
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs
+
+- [`rjson`](src/rjson.c) :
 
 - `circ_buf.h`: Copied from [linux/circ_buf.h](https://github.com/torvalds/linux/blob/master/include/linux/circ_buf.h)
 
