@@ -1,4 +1,4 @@
-clib
+c language trash box
 --------
 
 - [`tinyalloc`](src/tinyalloc.c) : Releases all requested memory at once instead of releasing each object separately.
@@ -32,7 +32,7 @@ clib
   }
   rarray_discard(&array);
   ```
-- ~~`slist.h`: Singly Linked List.~~ Useless
+- ~~`slist.h`: Singly Linked List.~~ Deprecated
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs
 
