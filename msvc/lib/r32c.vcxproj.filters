@@ -51,5 +51,8 @@
     <ClCompile Include="..\..\src\rjson_parser_slr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gb2312.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

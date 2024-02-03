@@ -587,6 +587,35 @@ void t_rjson()
 	assert(rjvalue_object_get(rjson.value, L"what.is.love") == array);
 	rjson_release(&rjson);
 }
+
+
+void t_gb2312()
+{
+	void gb_release();
+	unsigned short gb_from_unicode(unsigned short uc);
+	unsigned short gb_to_unicode(unsigned short gbc);
+
+	assert(gb_from_unicode(0x00EA) == 0xA8BA);
+	assert(gb_from_unicode(0x00EC) == 0xA8AC);
+	assert(gb_from_unicode(0x6388) == 0xCADA);
+	assert(gb_from_unicode(0x63BE) == 0xDEF2);
+	assert(gb_from_unicode(0x643A) == 0xD0AF);
+	assert(gb_from_unicode(0x763E) == 0xF1AB);
+	assert(gb_from_unicode(0x81E7) == 0xEAB0);
+	assert(gb_from_unicode(0x8DE3) == 0xF5D0);
+
+	assert(0x00EA == gb_to_unicode(0xA8BA));
+	assert(0x00EC == gb_to_unicode(0xA8AC));
+	assert(0x6388 == gb_to_unicode(0xCADA));
+	assert(0x63BE == gb_to_unicode(0xDEF2));
+	assert(0x643A == gb_to_unicode(0xD0AF));
+	assert(0x763E == gb_to_unicode(0xF1AB));
+	assert(0x81E7 == gb_to_unicode(0xEAB0));
+	assert(0x8DE3 == gb_to_unicode(0xF5D0));
+
+	gb_release();
+}
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
@@ -596,6 +625,7 @@ int main(int argc, char** args) {
 	t_wcsbuf();
 	t_rarray();
 	t_rjson();
+	t_gb2312();
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();
