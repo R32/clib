@@ -37,14 +37,13 @@ static uint32_t inline decode(uint32_t *state, uint32_t *codep, uint32_t byte)
 	return *state;
 }
 
-
-int utf8towcs(wchar_t *out, const unsigned char *src, int len)
+int utf8towcs(unsigned short *out, const unsigned char *src, int srcbytes)
 {
 	uint32_t byte;
 	uint32_t codep = 0;
 	uint32_t state = 0;
 	int i = 0;
-	const unsigned char *max = len < 0 ? (const unsigned char *)UINTPTR_MAX : src + len;
+	const unsigned char *max = srcbytes < 0 ? (const unsigned char *)UINTPTR_MAX : src + srcbytes;
 	if (out == NULL) {
 		while (src < max) {
 			byte = *src++;
@@ -55,10 +54,10 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 				} else {
 					i += 2;
 				}
-				if (!byte && len < 0)
+				if (!byte && srcbytes < 0)
 					break;
 			} else if (state == UTF8_REJECT) {
-				return 0; // ERROR
+				break; // ERROR
 			}
 		}
 		return i;
@@ -68,31 +67,31 @@ int utf8towcs(wchar_t *out, const unsigned char *src, int len)
 		decode(&state, &codep, byte);
 		if (state == UTF8_ACCEPT) {
 			if (codep < 0xFFFF) {
-				out[i++] = (wchar_t)codep;
+				out[i++] = (unsigned short)codep;
 			} else {
-				out[i++] = (wchar_t)(0xD7C0 + (codep >> 10));
-				out[i++] = (wchar_t)(0xDC00 + (codep & 0x3FF));
+				out[i++] = (unsigned short)(0xD7C0 + (codep >> 10));
+				out[i++] = (unsigned short)(0xDC00 + (codep & 0x3FF));
 			}
-			if (!byte && len < 0)
+			if (!byte && srcbytes < 0)
 				break;
 		} else if (state == UTF8_REJECT) {
-			return 0; // ERROR
+			break; // ERROR
 		}
 	}
 	return i;
 }
 
-int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
+int wcstoutf8(unsigned char *out, const unsigned short *src, int srclen)
 {
 	unsigned int c = 0;
 	int i = 0;
-	const wchar_t *max = len < 0 ? (const wchar_t *)UINTPTR_MAX : src + len;
+	const unsigned short *max = srclen < 0 ? (const unsigned short *)UINTPTR_MAX : src + srclen;
 	if (out == NULL) {
 		while (src < max) {
 			c = *src++;
 			if (c < 0x80) {
 				i++;
-				if (!c && len < 0)
+				if (!c && srclen < 0)
 					break;
 			} else if (c < 0x800) {
 				i += 2;
@@ -110,7 +109,7 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 		c = *src++;
 		if (c < 0x80) {
 			out[i++] = (unsigned char)c;
-			if (!c && len < 0)
+			if (!c && srclen < 0)
 				break;
 		} else if (c < 0x800) {
 			out[i++] = (unsigned char)(0xC0 | (c >> 6));
@@ -119,7 +118,7 @@ int wcstoutf8(unsigned char *out, const wchar_t *src, int len)
 			int k = ((((int)c - 0xD800) << 10) | (((int)*src++) - 0xDC00)) + 0x10000;
 			if (src == max)
 				break;
-			out[i++] = (unsigned char)(0xF0 |(k>>18));
+			out[i++] = (unsigned char)(0xF0 | (k>>18));
 			out[i++] = (unsigned char)(0x80 | ((k >> 12) & 63));
 			out[i++] = (unsigned char)(0x80 | ((k >> 6) & 63));
 			out[i++] = (unsigned char)(0x80 | (k & 63));
