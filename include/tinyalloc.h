@@ -24,12 +24,12 @@
 struct allocator_base {
 	int chksize; // in KB
 	int metasize;
-	void* chunk_head;
+	void *chunk_head;
 };
 
 struct tinyalloc_root {
 	struct allocator_base base;
-	void *freelist[TINYALLOC_FREELIST_MAX + 1];
+	void *freelist[TINYALLOC_FREELIST_MAX];
 };
 
 struct bumpalloc_root {

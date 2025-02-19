@@ -10,13 +10,12 @@
 #define FREELIST_MAX       TINYALLOC_FREELIST_MAX
 
 struct meta {
-	int size; // sizeof(meta->data)
+	int size; // sizeof(struct meta) + strlen(meta.data)
 	char data[0];
 };
 
 #define META_DATAPTR(m)    ((m)->data)
-#define META_DATASIZE(m)   ((m)->size)
-#define META_FULLSIZE(m)   ((m)->size + sizeof(struct meta))
+#define META_FULLSIZE(m)   ((m)->size)
 #define FREE_NEXT(m)       (*(void **)(m)->data)
 #define FREE_HEAD(root, i) ((root)->freelist[i])
 #define FREE_RESET(fl)     (freelist_reset(fl, ARRAYSIZE(fl)))
@@ -24,7 +23,7 @@ struct meta {
 
 struct chunk {
 	int pos;
-	int size; // sizeof(chunk->mem)
+	int size; // strlen(chunk.mem)
 	union {
 		struct chunk *next;
 		double __x; // align(struct chunk) to 8bytes if compiler is 32bit
@@ -86,15 +85,15 @@ static void freelist_reset(void **freelist, int max)
 
 static inline int freelist_index(unsigned int size)
 {
-	int i = size / BLK_BASE - 1;
-	return i < FREELIST_MAX ? i : FREELIST_MAX;
+	int i = size / BLK_BASE;
+	return i < FREELIST_MAX ? i : 0;
 }
 
 static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 {
 	int i = freelist_index(size);
 	struct meta *curr = FREE_HEAD(root, i);
-	if (curr && i < FREELIST_MAX) {
+	if (curr && i) {
 		FREE_HEAD(root, i) = FREE_NEXT(curr);
 		return curr;
 	}
@@ -106,10 +105,10 @@ static struct meta *freelist_get(struct tinyalloc_root *root, int size)
 			curr = FREE_NEXT(curr);
 			continue;
 		}
-		if (full >= size + (BLK_BASE * (int)ARRAYSIZE(root->freelist))) { // Do Splits
+		if (full >= size + (BLK_BASE * FREELIST_MAX)) { // Do Splits
 			struct meta *next = (struct meta *)((char *)curr + size);
-			META_DATASIZE(curr) = size - sizeof(struct meta);
-			META_DATASIZE(next) = full - sizeof(struct meta) - size;
+			META_FULLSIZE(curr) = size;
+			META_FULLSIZE(next) = full - size;
 			FREE_NEXT(next) = FREE_NEXT(curr);
 			FREE_NEXT(curr) = next;
 		}
@@ -150,7 +149,7 @@ void *tinyalloc(struct tinyalloc_root *root, int size)
 	if (!chk)
 		return NULL;
 	meta = (struct meta *)chk_dataptr(chk);
-	META_DATASIZE(meta) = size - sizeof(struct meta);
+	META_FULLSIZE(meta) = size;
 	chk->pos += size;
 	return META_DATAPTR(meta);
 }

@@ -162,7 +162,7 @@ void shuffle(void* a[], int len) {
 }
 
 #define BLKMAX             1024
-#define PTRSIZE(ptr)       (*(((int*)(ptr)) - 1))
+#define PTRSIZE(ptr)       (*(((int*)(ptr)) - 1) - 4) // fullsize - sizeof(struct meta)
 #define BLK_BASE           (TINYALLOC_BLK_BASE)
 #define IS_ALIGNED(ptr)    (((size_t)(ptr) & (BLK_BASE - 1)) == 0)
 
