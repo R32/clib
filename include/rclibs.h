@@ -78,25 +78,6 @@
 #   define IS32BIT 1
 #endif
 
-// singly linked list
-struct slist_head {
-	struct slist_head *next;
-};
-
-// doubly linked list
-struct list_head {
-	struct list_head *next, *prev;
-};
-
-// used for hashtable
-struct hlist_head {
-	struct hlist_node *first;
-};
-
-struct hlist_node {
-	struct hlist_node *next, **pprev;
-};
-
 // some compatibility for files copied from linux
 #ifndef READ_ONCE
 #   define READ_ONCE(x) (x)

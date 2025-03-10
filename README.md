@@ -1,4 +1,4 @@
-c language trash box
+my c language trashbox
 --------
 
 - [`tinyalloc`](src/tinyalloc.c) : Releases all requested memory at once instead of releasing each object separately.
@@ -11,8 +11,11 @@ c language trash box
 
   * [`wcsbuf`](src/wcsbuf.c) : The wchar_t version of strbuf
 
-- [`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`)
+- [`pmap`](src/pmap.c) : PMap in C language, This code is ported from OCaml ExtLib PMap [sample](test/pmap_test.c)
 
+- ~~[`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`)~~ It's horrible
+
+  <details><summary>hiden</summary>
   ```c
   // rarray_fast_set, rarray_fast_get
   struct point {
@@ -32,6 +35,8 @@ c language trash box
   }
   rarray_discard(&array);
   ```
+  </details>
+
 - ~~`slist.h`: Singly Linked List.~~ Deprecated
 
 - `ucs2`: wcs_to_utf8, utf8_to_wcs

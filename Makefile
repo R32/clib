@@ -9,6 +9,7 @@ CFLAGS   := -fshort-wchar
 INCLUDES := -I$(INC)
 OBJS     := slist.o rbtree.o ucs2.o tinyalloc.o strbuf.o wcsbuf.o rarray.o \
             rstream.o crlf_counter.o rjson.o rjson_parser_lex.o rjson_parser_slr.o \
+            pmap.o
 
 ifdef mingw
     CC   := i686-w64-mingw32-gcc
@@ -27,13 +28,13 @@ clean:
 
 FORCE:;
 
-.PHONY: all clean lib FORCE
+.PHONY: all clean lib test FORCE
 
 $(OBJ):
 	@mkdir -p $@
 
-$(EXE): $(OBJ)/main.o $(LIB)
-	$(CC) $(INCLUDES) $(CFLAGS) $< -L$(dir $(LIB)) -lr32c -o $@
+$(EXE): $(OBJ)/main.o $(OBJ)/pmap_test.o $(LIB)
+	$(CC) $(INCLUDES) $(CFLAGS) $^ -o $@
 
 $(LIB): $(OBJS:%.o=$(OBJ)/%.o)
 	ar rcs $@ $^
@@ -41,9 +42,13 @@ $(LIB): $(OBJS:%.o=$(OBJ)/%.o)
 # lower-case vpath, NOTE: Don't uses vpath to match the generated file.
 vpath %.h $(INC)
 vpath %.c $(SRC)
+vpath %.c test
 
 # .exe
 $(OBJ)/main.o: main.c rclibs.h
+
+# test
+$(OBJ)/pmap_test.o: pmap_test.c pmap.c pmap.h
 
 # .lib
 $(OBJ)/%.o: %.c rclibs.h
@@ -56,7 +61,7 @@ $(OBJ)/slist.o: slist.c slist.h
 $(OBJ)/rbtree.o: rbtree.c rbtree.h rbtree_augmented.h
 
 $(OBJ)/tinyalloc.o: tinyalloc.c tinyalloc.h
-
+$(OBJ)/pmap.o: pmap.c pmap.h
 $(OBJ)/strbuf.o: strbuf.c strbuf.h
 $(OBJ)/wcsbuf.o: wcsbuf.c wcsbuf.h
 $(OBJ)/rarray.o: rarray.c rarray.h

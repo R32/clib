@@ -6,6 +6,12 @@
 #define R_SLIST_H
 #include "rclibs.h"
 
+
+// singly linked list
+struct slist_head {
+	struct slist_head *next;
+};
+
 /**
 * +------+      +------+       +------+       +------+
 * | HEAD |next->|  N3  |next-->|  N2  |next-->|  N1  |next-->NULL

@@ -7,7 +7,7 @@
 #include "slist.h"
 #include "circ_buf.h"
 #include "list.h"
-#include "rbtree_augmented.h"
+#include "rbtree.h"
 #include "ucs2.h"
 #include "tinyalloc.h"
 #include "strbuf.h"
@@ -587,6 +587,9 @@ void t_rjson()
 	assert(rjvalue_object_get(rjson.value, L"what.is.love") == array);
 	rjson_release(&rjson);
 }
+
+void pmap_test(int n); // test/pmap_test.c
+
 int main(int argc, char** args) {
 	setlocale(LC_CTYPE, "");
 	t_ucs2();
@@ -596,6 +599,7 @@ int main(int argc, char** args) {
 	t_wcsbuf();
 	t_rarray();
 	t_rjson();
+	pmap_test(3);
 	for (int i = 0; i < 7; i++) {
 		t_tinyalloc();
 		t_bumpalloc();
