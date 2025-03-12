@@ -25,16 +25,17 @@ static struct data *data_find(struct pmnode *root, int key)
 
 static struct data *data_remove(struct pmnode **root, int key)
 {
-	struct pmnode **parent = NULL;
+	int index = -1;
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	struct pmnode **slot = root;
 	while (*slot) {
 		struct data *curr = container_of(*slot, struct data, node);
 		int cmp = key - curr->key;
 
-		(*slot)->rope = parent;
 		if (cmp == 0)
 			break;
-		parent = slot;
+		pmap_stacks[++index] = slot;
+
 		if (cmp < 0) {
 			slot = &(*slot)->left;
 		} else {
@@ -44,21 +45,22 @@ static struct data *data_remove(struct pmnode **root, int key)
 	if (*slot == NULL)
 		return NULL;
 	struct pmnode *victim = pmap_merge(slot);
-	while (parent) {
-		parent = pmap_balance(parent)->rope;
+	while (index >= 0) {
+		pmap_balance(pmap_stacks[index--], &index);
 	}
 	return container_of(victim, struct data, node);
 }
 
 static struct data *data_insert(struct pmnode **root, struct data *data)
 {
-	struct pmnode **parent = NULL;
+	int index = -1;
+	int count = pmap_height(*root);
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	struct pmnode **slot = root;
 	while (*slot) {
 		struct data *curr = container_of(*slot, struct data, node);
 		int cmp = data->key - curr->key;
-		(*slot)->rope = parent;
-		parent = slot;
+		pmap_stacks[++index] = slot;
 		if (cmp < 0) {
 			slot = &(*slot)->left;
 		} else if (cmp > 0) {
@@ -68,12 +70,14 @@ static struct data *data_insert(struct pmnode **root, struct data *data)
 		}
 	}
 	// init new node
-	data->node = (struct pmnode) {parent, NULL, NULL, 1};
+	data->node = (struct pmnode){.left = NULL, .right = NULL, .height = 1};
+
 	// link node to the NULL place.
 	*slot = &data->node;
+
 	// do balancing
-	while (parent) {
-		parent = pmap_balance(parent)->rope;
+	while (index >= 0) {
+		pmap_balance(pmap_stacks[index--], &index);
 	}
 	return NULL;
 }
@@ -83,14 +87,11 @@ static int data_iter(char *desc, int deep, struct pmnode *node) {
 		return 0;
 	struct data *data = container_of(node, struct data, node);
 	int i = data_iter("L", deep + 4, node->left);
-	printf("%*s(key : %d, height : %d)\n", deep, desc, data->key, data->node.height);
+	printf("%*s[%d h(%d)]\n", deep, desc, data->key, data->node.height);
 	i++;
 	i += data_iter("R", deep + 4, node->right);
 	return i;
 }
-
-
-
 
 #ifndef SIZE
 #   define SIZE (16 * 10000)
@@ -119,7 +120,9 @@ static void test_inner(struct data *pdata, int logout)
 	}
 	t = clock() - t;
 	if (logout) printf("Inserting count : %d, time : %.6f, tree height : %d\n", SIZE, ((double)t) / CLOCKS_PER_SEC, root->height);
-	//data_iter("*", 1, root);
+
+	// data_iter("*", 1, root);
+	assert(pmap_count(root) == SIZE);
 
 	// finding
 	t = clock();

@@ -1,6 +1,6 @@
 /*
  * PMap in C language, This code is ported from OCaml ExtLib PMap
- * Copyright (C) 2025 LiuWM
+ * Copyright (C) 2025 Liuwm
  */
 /*
  * PMap - Polymorphic maps
@@ -21,23 +21,30 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+/*
+ * PMap in C language, This code is ported from OCaml ExtLib PMap
+ */
 
 #include "pmap.h"
-
-static int inline pmap_height(struct pmnode *node)
-{
-	return node ? node->height : 0;
-}
 
 static int inline imax(int a, int b)
 {
 	return a > b ? a : b;
 }
 
-struct pmnode *pmap_balance(struct pmnode **slot)
+int pmap_count(struct pmnode *root)
+{
+	if (!root)
+		return 0;
+	int n = 1;
+	n += pmap_count(root->left);
+	n += pmap_count(root->right);
+	return n;
+}
+
+void pmap_balance(struct pmnode **slot, int *breakout)
 {
 	struct pmnode *node = *slot;
-	struct pmnode **rope = node->rope;
 	struct pmnode *left = node->left;
 	struct pmnode *right = node->right;
 	int hL = pmap_height(left);
@@ -51,10 +58,12 @@ struct pmnode *pmap_balance(struct pmnode **slot)
 			 * (LL LR)    ->        (LR  R)
 			 */
 			node->left = left->right;
-			left->right = node;
 			node->height = imax(hLR, hR) + 1;
+
+			left->right = node;
 			left->height = imax(hLL, node->height) + 1;
-			node = left;
+
+			*slot = left;
 		} else {
 			/*      N              LR
 			 *    L   R        L        N
@@ -62,15 +71,18 @@ struct pmnode *pmap_balance(struct pmnode **slot)
 			 *   (LRL LRR)
 			 */
 			struct pmnode *LR = left->right;
+
 			left->right = LR->left;
-			node->left = LR->right;
 			left->height = imax(hLL, pmap_height(LR->left)) + 1;
+
+			node->left = LR->right;
 			node->height = imax(pmap_height(LR->right), hR) + 1;
 
 			LR->left = left;
 			LR->right = node;
 			LR->height = imax(left->height, node->height) + 1;
-			node = LR;
+
+			*slot = LR;
 		}
 	} else if (hR > hL + 2) {
 		int hRL = pmap_height(right->left);
@@ -82,10 +94,12 @@ struct pmnode *pmap_balance(struct pmnode **slot)
 			 *    (RL RR)   (L  RL)
 			 */
 			 node->right = right->left;
-			 right->left = node;
 			 node->height = imax(hL, hRL) + 1;
+
+			 right->left = node;
 			 right->height = imax(node->height, hRR) + 1;
-			 node = right;
+
+			 *slot = right;
 		} else {
 			/*     N                RL
 			 *   L   R          N        R
@@ -93,30 +107,27 @@ struct pmnode *pmap_balance(struct pmnode **slot)
 			 * (RLL RLR)
 			 */
 			struct pmnode *RL = right->left;
-			node->right = RL->left;
-			right->left = RL->right;
 
+			node->right = RL->left;
 			node->height = imax(hL, pmap_height(RL->left)) + 1;
+
+			right->left = RL->right;
 			right->height = imax(pmap_height(RL->right), hRR) + 1;
 
 			RL->left = node;
 			RL->right = right;
 			RL->height = imax(node->height, right->height) + 1;
-			node = RL;
+
+			*slot = RL;
 		}
 	} else {
 		int height = imax(hL, hR) + 1;
 		if (height == node->height) {
-			node->rope = NULL;
-		} else {
-			node->height = height;
+			*breakout = -1; // to break the outside loop
+			return;
 		}
-		return node;
+		node->height = height;
 	}
-	// linking
-	node->rope = rope;
-	*slot = node;
-	return node;
 }
 
 struct pmnode *pmap_merge(struct pmnode **slot)
@@ -152,28 +163,29 @@ struct pmnode *pmap_merge(struct pmnode **slot)
 	 * (LM  -)             (LMR  -)
 	 *    LMR
 	 */
-	struct pmnode **anchor = &(*slot)->right;
-	struct pmnode **leftmost = NULL;
+	int index = 0;
+	pmap_stacks_decl(pmap_stacks, victim->height);
+	pmap_stacks[0] = slot;
+	struct pmnode **anchor = &victim->right;
 	while (*anchor) {
-		(*anchor)->rope = leftmost;
-		leftmost = anchor;
+		pmap_stacks[++index] = anchor;
 		anchor = &(*anchor)->left;
 	}
-	struct pmnode *node = *leftmost;
-
-	// start balancing at leftmost_parent
-	leftmost = node->rope;
+	// leftmost node
+	struct pmnode *node = *pmap_stacks[index];
 
 	// leftmost_parent->left = leftmost->right; (remove_min_binding)
-	(*leftmost)->left = node->right;
+	(*pmap_stacks[--index])->left = node->right;
 
-	while (leftmost) {
-		leftmost = pmap_balance(leftmost)->rope;
-	}
-	// link the leftmost node to the slot
-	(*slot)->rope = NULL;
+	// copy (left, right) to node
 	*node = **slot;
+	// link the leftmost node to the slot
 	*slot = node;
-	pmap_balance(slot);
+	// updating `&slot->right` after linking. [0] => slot, [1] => &slot->right
+	pmap_stacks[1] = &node->right;
+
+	while (index >= 0) {
+		pmap_balance(pmap_stacks[index--], &index);
+	}
 	return victim;
 }
