@@ -1,6 +1,13 @@
 /*
  * PMap in C language, This code is ported from OCaml ExtLib PMap
  * Copyright (C) 2025 Liuwm
+ *
+ *
+ * To use pmap you'll have to implement your own insert, remove, search and iterater cores.
+ * This will avoid us to use callbacks and to drop drammatically performances.
+ * I know it's not the cleaner way,  but in C (not in C++) to get performances and genericity...
+ *
+ * Refer to `test/pmap_test.c` for samples.
  */
 /*
  * PMap - Polymorphic maps
@@ -20,9 +27,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-/*
- * PMap in C language, This code is ported from OCaml ExtLib PMap
  */
 
 #include "pmap.h"
@@ -130,18 +134,16 @@ void pmap_balance(struct pmnode **slot, int *breakout)
 	}
 }
 
-struct pmnode *pmap_merge(struct pmnode **slot)
+void pmap_merge(struct pmnode **slot)
 {
-	struct pmnode *victim = *slot;
-	struct pmnode *left = victim->left;
-	struct pmnode *right = victim->right;
-
+	struct pmnode *left = (*slot)->left;
+	struct pmnode *right = (*slot)->right;
 	if (left == NULL) {
 		*slot = right;
-		return victim;
+		return;
 	} else if (right == NULL) {
 		*slot = left;
-		return victim;
+		return;
 	}
 
 	/*    N             R
@@ -152,7 +154,7 @@ struct pmnode *pmap_merge(struct pmnode **slot)
 		*slot = right;
 		right->left = left;
 		right->height = imax(left->height, pmap_height(right->right)) + 1;
-		return victim;
+		return;
 	}
 
 	/*
@@ -164,9 +166,9 @@ struct pmnode *pmap_merge(struct pmnode **slot)
 	 *    LMR
 	 */
 	int index = 0;
-	pmap_stacks_decl(pmap_stacks, victim->height);
+	pmap_stacks_decl(pmap_stacks, (*slot)->height);
 	pmap_stacks[0] = slot;
-	struct pmnode **anchor = &victim->right;
+	struct pmnode **anchor = &(*slot)->right;
 	while (*anchor) {
 		pmap_stacks[++index] = anchor;
 		anchor = &(*anchor)->left;
@@ -181,11 +183,10 @@ struct pmnode *pmap_merge(struct pmnode **slot)
 	*node = **slot;
 	// link the leftmost node to the slot
 	*slot = node;
-	// updating `&slot->right` after linking. [0] => slot, [1] => &slot->right
+	// update `&slot->right` after linking. [0] => slot, [1] => &slot->right
 	pmap_stacks[1] = &node->right;
 
 	while (index >= 0) {
 		pmap_balance(pmap_stacks[index--], &index);
 	}
-	return victim;
 }

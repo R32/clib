@@ -1,6 +1,13 @@
 /*
  * PMap in C language, This code is ported from OCaml ExtLib PMap
  * Copyright (C) 2025 Liuwm
+ *
+ *
+ * To use pmap you'll have to implement your own insert, remove, search and iterater cores.
+ * This will avoid us to use callbacks and to drop drammatically performances.
+ * I know it's not the cleaner way,  but in C (not in C++) to get performances and genericity...
+ *
+ * Refer to `test/pmap_test.c` for samples.
  */
 /*
  * PMap - Polymorphic maps
@@ -22,9 +29,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * PMap in C language, This code is ported from OCaml ExtLib PMap
- */
 #ifndef R32_PMAP_H
 #define R32_PMAP_H
 
@@ -36,7 +40,7 @@ struct pmnode {
 
 int pmap_count(struct pmnode *root);
 void pmap_balance(struct pmnode **slot, int *breakout);
-struct pmnode *pmap_merge(struct pmnode **slot);
+void pmap_merge(struct pmnode **slot);
 
 static int inline pmap_height(struct pmnode *node)
 {
