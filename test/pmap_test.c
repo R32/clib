@@ -104,17 +104,19 @@ static void data_iter_forward(struct pmnode *root) {
 	// <------ for test
 	static int prev = -1;
 	// <------
+	struct pmnode *node = root;
+	if (!node)
+		return;
 
 	int index = -1;
 	VLADecl(struct pmnode*, pmnode_stacks, pmap_height(root) + 1);
-	struct pmnode *node = root;
 	// entry_first(leftmost)
 	while (node->left) {
 		pmnode_stacks[++index] = node;
 		node = node->left;
 	}
 	// entry_next
-	while (node) {
+	while (1) {
 		// <--------
 		struct data *data = container_of(node, struct data, node);
 		assert(prev + 1 == data->key);
