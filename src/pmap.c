@@ -2,10 +2,9 @@
  * PMap in C language, This code is ported from OCaml ExtLib PMap
  * Copyright (C) 2025 Liuwm
  *
- *
- * To use pmap you'll have to implement your own insert, remove, search and iterater cores.
+ * To use pmap you'll have to implement your own insert, remove, search and iterater routines.
  * This will avoid us to use callbacks and to drop drammatically performances.
- * I know it's not the cleaner way,  but in C (not in C++) to get performances and genericity...
+ * I know it's not the cleaner way, but in C (not in C++) to get performances and genericity...
  *
  * Refer to `test/pmap_test.c` for samples.
  */
