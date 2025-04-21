@@ -1,39 +1,29 @@
 /*
  * SPDX-License-Identifier: GPL-2.0
+ *
+ * most of this code is stolen from the hashlink/buffer.c by Haxe Foundation
  */
-#ifndef R_STRBUF_H
-#define R_STRBUF_H
-#include "rclibs.h"
 
-#ifndef rb_malloc
-#	define rb_malloc malloc
-#endif
-#ifndef rb_free
-#	define rb_free free
-#endif
+#ifndef LWM_STRBUF_H
+#define LWM_STRBUF_H
+
+#include "buffer.h"
 
 struct strbuf {
-	int csize;  // the elements size of the last chunk
-	int length; // elements length;
-	void *chunks;
+	struct buffer inner;
 };
 
-#define strbuf_length(buf) ((buf)->length)
 
-C_FUNCTION_BEGIN
+#define strbuf_length(buf)   buffer_length(&(buf)->inner)
+#define strbuf_reset(buf)    buffer_reset(&(buf)->inner)
+#define strbuf_release(buf)  buffer_release(&(buf)->inner)
 
-void strbuf_init(struct strbuf *buf);
-void strbuf_reset(struct strbuf *buf);
-void strbuf_release(struct strbuf *buf);
-
+void strbuf_init(struct strbuf *buf, int init);
 void strbuf_append_char(struct strbuf *buf, char c);
 void strbuf_append_string(struct strbuf *buf, char *string, int len);
 void strbuf_append_int(struct strbuf *buf, int i);
 void strbuf_append_float(struct strbuf *buf, float f, int fixed);
 void strbuf_append_double(struct strbuf *buf, double lf, int fixed);
-
 void strbuf_to_string(struct strbuf *buf, char *out);
-int  strbuf_to_file(struct strbuf *buf, FILE *stream);
 
-C_FUNCTION_END
 #endif

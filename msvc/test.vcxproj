@@ -125,8 +125,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\main.c" />
+    <ClCompile Include="..\test\buffer_test.c" />
     <ClCompile Include="..\test\pmap_test.c" />
+    <ClCompile Include="..\test\test.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="lib\r32c.vcxproj">

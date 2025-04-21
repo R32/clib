@@ -4,29 +4,32 @@
 
 #ifndef R_CRLF_COUNTER_H
 #define R_CRLF_COUNTER_H
-#include "strbuf.h"
+#include "buffer.h"
 
-struct lncolumn {
+struct line_column {
 	int line;
 	int column; // start at 1
 };
 
 /*
- * This module is often used with lexer to save the position of '\n'
+ * This module typically works with lexer/parser to record the next position of '\n'.
  */
 struct crlf_counter {
-	int csize;
-	int length;
-	void *chunks;
+	struct buffer inner;
+	// TODO : filename
 };
 
-C_FUNCTION_BEGIN
 
-void crlf_init(struct crlf_counter *crlf);
-void crlf_release(struct crlf_counter *crlf);
+#define crlf_length(crlf) buffer_length(&(crlf)->inner)
+#define crlf_reset(crlf)  do {        \
+	buffer_reset(&(crlf)->inner); \
+	(crlf)->inner.head->pos++;    \
+} while(0)
 
+#define crlf_release(crlf) buffer_release(&(crlf)->inner)
+
+void crlf_init(struct crlf_counter *crlf, int init);
 void crlf_add(struct crlf_counter *crlf, int pos);
-struct lncolumn crlf_get(struct crlf_counter *crlf, int pos);
+struct line_column crlf_search(struct crlf_counter *crlf, int pos);
 
-C_FUNCTION_END
 #endif

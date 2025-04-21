@@ -15,10 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\main.c">
+    <ClCompile Include="..\test\pmap_test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\test\pmap_test.c">
+    <ClCompile Include="..\test\buffer_test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\test\test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

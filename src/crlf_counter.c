@@ -1,88 +1,47 @@
 /*
  * SPDX-License-Identifier: GPL-2.0
  */
+
 #include "crlf_counter.h"
 
-struct chunk {
-	int pos;
-	int len; // elements length
-	union {
-		struct chunk *next;
-		double __x;
-	};
-	int data[0];
-};
+#define CHK_HEAD(crlf) ((crlf)->inner.head)
+#define CHK_TAIL(crlf) ((crlf)->inner.tail)
+#define CHK_DATA(chk)  ((int *)(chk)->data)
 
-#define chk_head(buf)  ((buf)->chunks)
-#define chk_next(chk)  ((chk)->next)
-
-void crlf_init(struct crlf_counter *crlf)
+void crlf_init(struct crlf_counter *crlf, int init)
 {
-	strbuf_init((struct strbuf *)crlf);
-}
-
-void crlf_release(struct crlf_counter *crlf)
-{
-	strbuf_release((struct strbuf *)crlf);
-}
-
-static void crlf_append_new(struct crlf_counter *crlf, int pos)
-{
-	while (crlf->length >= (crlf->csize << 2))
-		crlf->csize <<= 1;
-	int size = crlf->csize;
-	struct chunk *chk = rb_malloc(sizeof(struct chunk) + size * sizeof(int));
-	if (!chk) {
-		// TODO
-	}
-	chk->len = size;
-	chk->pos = 0;
-	chk_next(chk) = chk_head(crlf);
-	chk_head(crlf) = chk;
-
-	if (crlf->length == 1) {
-		chk->data[chk->pos++] = 0; // (line 1, column 1) at 0;
-		crlf->length++;
-	}
-	// chk.push(pos)
-	chk->data[chk->pos++] = pos;
+	crlf->inner = (struct buffer){0};
+	struct chunk *chk = buffer_append_chunk(&crlf->inner, init, sizeof(int));
+	CHK_DATA(chk)[chk->pos++] = 0; // (line 1, column 1) at 0
 }
 
 void crlf_add(struct crlf_counter *crlf, int pos)
 {
-	struct chunk *chk = chk_head(crlf);
-	crlf->length++;
-	if (chk && chk->pos < chk->len) {
-		chk->data[chk->pos++] = pos;
-		return;
+	struct chunk *chk = CHK_TAIL(crlf);
+	if (!chk || chk->pos == chk->len) {
+		chk = buffer_append_chunk(&crlf->inner, 64, sizeof(int));
+		if (chk == CHK_HEAD(crlf))
+			CHK_DATA(chk)[chk->pos++] = 0; // init
 	}
-	crlf_append_new(crlf, pos);
+	CHK_DATA(chk)[chk->pos++] = pos;
 }
 
-static int crlf_index2addr(struct chunk *chk, int index, int **addr)
+static int crlf_pos(struct crlf_counter *crlf, int index)
 {
-	if (!chk)
-		return index;
-	index = crlf_index2addr(chk_next(chk), index, addr);
-	if (index >= 0) {
-		if (index >= chk->len)
-			return index - chk->len;
-		*addr = &chk->data[index];
-	}
-	return -1;
-}
-
-static int crlf_pos(struct crlf_counter *crlf, int index) {
 	int *pos = NULL;
-	crlf_index2addr(chk_head(crlf), index, &pos);
-	return pos ? *pos : 0;
+	buffer_for_each(&crlf->inner, chk) {
+		if (chk->pos > index)
+			return CHK_DATA(chk)[index];
+		index -= chk->pos;
+	}
+	return 0;
 }
 
-struct lncolumn crlf_get(struct crlf_counter *crlf, int pos)
+struct line_column crlf_search(struct crlf_counter *crlf, int pos)
 {
 	// bsearch
 	int i = 0;
-	int j = crlf->length - 1;
+	int j = buffer_length(&crlf->inner) - 1;
 	while (i <= j) {
 		int k = (i + j) >> 1;
 		int p = crlf_pos(crlf, k);
@@ -93,8 +52,8 @@ struct lncolumn crlf_get(struct crlf_counter *crlf, int pos)
 			if (k < j && pos >= crlf_pos(crlf, i)) {
 				continue;
 			}
-			return (struct lncolumn){.line = i, .column = pos - p + 1};
+			return (struct line_column){.line = i, .column = pos - p + 1};
 		}
 	}
-	return (struct lncolumn){.line = 1, .column = pos + 1};
+	return (struct line_column){.line = 1, .column = pos + 1};
 }
