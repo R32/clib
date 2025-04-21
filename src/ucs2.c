@@ -43,9 +43,9 @@ int utf8towcs(unsigned short *out, const unsigned char *src, int srcbytes)
 	uint32_t codep = 0;
 	uint32_t state = 0;
 	int i = 0;
-	const unsigned char *max = srcbytes < 0 ? (const unsigned char *)UINTPTR_MAX : src + srcbytes;
+	const unsigned char *end = srcbytes < 0 ? (const unsigned char *)-1 : src + srcbytes;
 	if (out == NULL) {
-		while (src < max) {
+		while (src < end) {
 			byte = *src++;
 			decode(&state, &codep, byte);
 			if (state == UTF8_ACCEPT) {
@@ -62,7 +62,7 @@ int utf8towcs(unsigned short *out, const unsigned char *src, int srcbytes)
 		}
 		return i;
 	}
-	while (src < max) {
+	while (src < end) {
 		byte = *src++;
 		decode(&state, &codep, byte);
 		if (state == UTF8_ACCEPT) {
@@ -85,9 +85,9 @@ int wcstoutf8(unsigned char *out, const unsigned short *src, int srclen)
 {
 	unsigned int c = 0;
 	int i = 0;
-	const unsigned short *max = srclen < 0 ? (const unsigned short *)UINTPTR_MAX : src + srclen;
+	const unsigned short *end = srclen < 0 ? (const unsigned short *)-1 : src + srclen;
 	if (out == NULL) {
-		while (src < max) {
+		while (src < end) {
 			c = *src++;
 			if (c < 0x80) {
 				i++;
@@ -96,7 +96,7 @@ int wcstoutf8(unsigned char *out, const unsigned short *src, int srclen)
 			} else if (c < 0x800) {
 				i += 2;
 			} else if (c >= 0xD800 && c <= 0xDFFF) { // surrogate pair
-				if (++src == max)
+				if (++src == end)
 					break;
 				i += 4;
 			} else {
@@ -105,7 +105,7 @@ int wcstoutf8(unsigned char *out, const unsigned short *src, int srclen)
 		}
 		return i;
 	}
-	while (src < max) {
+	while (src < end) {
 		c = *src++;
 		if (c < 0x80) {
 			out[i++] = (unsigned char)c;
@@ -116,7 +116,7 @@ int wcstoutf8(unsigned char *out, const unsigned short *src, int srclen)
 			out[i++] = (unsigned char)(0x80 | (c & 63));
 		} else if (c >= 0xD800 && c <= 0xDFFF) {
 			int k = ((((int)c - 0xD800) << 10) | (((int)*src++) - 0xDC00)) + 0x10000;
-			if (src == max)
+			if (src == end)
 				break;
 			out[i++] = (unsigned char)(0xF0 | (k>>18));
 			out[i++] = (unsigned char)(0x80 | ((k >> 12) & 63));
