@@ -84,11 +84,9 @@ void wcsbuf_append_float(struct wcsbuf *buf, float f, int fixed)
 {
 	wchar_t array[16];
 	int len;
-	if (fixed <= 0) {
-		len = swprintf(array, 16, L"%f"  ,        f);
-	} else {
-		len = swprintf(array, 16, L"%.*f", fixed, f);
-	}
+	if (fixed <= 0)
+		fixed = 9;
+	len = swprintf(array, 16, L"%.*f", fixed, f);
 	wcsbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 
@@ -96,11 +94,9 @@ void wcsbuf_append_double(struct wcsbuf *buf, double lf, int fixed)
 {
 	wchar_t array[32];
 	int len;
-	if (fixed <= 0) {
-		len = swprintf(array, 32, L"%g"  ,        lf + DBL_EPSILON);
-	} else {
-		len = swprintf(array, 32, L"%.*g", fixed, lf + DBL_EPSILON);
-	}
+	if (fixed <= 0)
+		fixed = 17;
+	len = swprintf(array, 32, L"%.*g", fixed, lf + DBL_EPSILON);
 	wcsbuf_append_string(buf, array, trim_tail_zero(array, len));
 }
 

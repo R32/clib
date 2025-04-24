@@ -31,12 +31,11 @@ void buffer_reset(struct buffer *buff)
 	struct chunk *keep = CHK_HEAD(buff);
 	if (!keep)
 		return;
-
+	// Release all chunks except first
 	chunk_release(CHK_NEXT(keep));
 
 	keep->pos = 0;
 	CHK_NEXT(keep) = NULL;
-	CHK_HEAD(buff) = keep;
 	CHK_TAIL(buff) = keep;
 }
 

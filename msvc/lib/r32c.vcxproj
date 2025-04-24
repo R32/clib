@@ -19,13 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\buffer.c" />
     <ClCompile Include="..\..\src\crlf_counter.c" />
+    <ClCompile Include="..\..\src\kuai.c" />
     <ClCompile Include="..\..\src\pmap.c" />
-    <ClCompile Include="..\..\src\rarray.c" />
     <ClCompile Include="..\..\src\rbtree.c" />
-    <ClCompile Include="..\..\src\rjson.c" />
-    <ClCompile Include="..\..\src\rjson_parser_lex.c" />
-    <ClCompile Include="..\..\src\rjson_parser_slr.c" />
     <ClCompile Include="..\..\src\rstream.c" />
     <ClCompile Include="..\..\src\slist.c" />
     <ClCompile Include="..\..\src\strbuf.c" />

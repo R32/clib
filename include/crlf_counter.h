@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: GPL-2.0
  */
 
-#ifndef R_CRLF_COUNTER_H
-#define R_CRLF_COUNTER_H
+#ifndef LWM_CRLF_COUNTER_H
+#define LWM_CRLF_COUNTER_H
 #include "buffer.h"
 
 struct line_column {
