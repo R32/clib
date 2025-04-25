@@ -28,7 +28,6 @@ void crlf_add(struct crlf_counter *crlf, int pos)
 
 static int crlf_pos(struct crlf_counter *crlf, int index)
 {
-	int *pos = NULL;
 	buffer_for_each(&crlf->inner, chk) {
 		if (chk->pos > index)
 			return CHK_DATA(chk)[index];
