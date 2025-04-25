@@ -77,3 +77,41 @@ struct chunk *buffer_append_chunk(struct buffer *buff, int len, int size)
 	CHK_TAIL(buff) = chk;
 	return chk;
 }
+
+
+void *buffer_incr(struct buffer *buff, int size)
+{
+	struct chunk *chk = CHK_TAIL(buff);
+	if (!chk || chk->pos == chk->len)
+		chk = buffer_append_chunk(buff, 0, size);
+	return &chk->data[size * chk->pos++];
+}
+
+void *buffer_index(struct buffer *buff, int size, int index)
+{
+	buffer_for_each(buff, chk) {
+		if (chk->pos > index)
+			return &chk->data[index * size];
+		index -= chk->pos;
+	}
+	return NULL;
+}
+
+void *buffer_bsearch(struct buffer *buff, int size, void *value, int (*compare)(const void*, const void*))
+{
+	int i = 0;
+	int j = buffer_length(buff) - 1;
+	while (i <= j) {
+		int k = (i + j) >> 1;
+		void *pt = buffer_index(buff, size, k);
+		int sign = compare(value, pt);
+		if (sign < 0) {
+			j = k - 1;
+		} else if (sign > 0) {
+			i = k + 1;
+		} else {
+			return pt;
+		}
+	}
+	return NULL;
+}

@@ -9,6 +9,34 @@
 #include "wcsbuf.h"
 #include "crlf_counter.h"
 
+struct posnum {
+	int pos;
+	int num;
+};
+static int posnum_compare(const struct posnum *a, const struct posnum *b)
+{
+	return a->pos - b->pos;
+}
+static void buffer()
+{
+	const int MAX = 66;
+	struct buffer posbuf = { 0 };
+	for (int i = 0; i < MAX; i++) {
+		struct posnum *data = buffer_incr(&posbuf, sizeof(struct posnum));
+		data->pos = i;
+		data->num = MAX - i;
+	}
+	assert(buffer_length(&posbuf) == MAX);
+	for (int i = 0; i < MAX; i++) {
+		struct posnum *data = buffer_index(&posbuf, sizeof(struct posnum), i);
+		assert(data->pos == i && data->num == MAX - i);
+		assert(buffer_bsearch(&posbuf, sizeof(struct posnum), data, posnum_compare) == data);
+	}
+	struct posnum dummy = { MAX , 0 };
+	assert(buffer_bsearch(&posbuf, sizeof(struct posnum), &dummy, posnum_compare) == NULL);
+	buffer_release(&posbuf);
+}
+
 static void crlf_counter()
 {
 	char text[] =
@@ -141,6 +169,7 @@ static void wcsbuf()
 
 void buffer_test()
 {
+	buffer();
 	strbuf();
 	wcsbuf();
 	crlf_counter();

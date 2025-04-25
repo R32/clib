@@ -39,10 +39,12 @@ struct chunk {
 int buffer_length(struct buffer *buf);
 void buffer_reset(struct buffer *buf);
 void buffer_release(struct buffer *buf);
-
-/*
- * BEWARE : make sure that the 'buf' is initialized
- */
 struct chunk *buffer_append_chunk(struct buffer *buf, int len, int size);
+
+
+
+void *buffer_incr(struct buffer *buff, int size);
+void *buffer_index(struct buffer *buff, int size, int index);
+void *buffer_bsearch(struct buffer *buff, int size, void *value, int (*compare)(const void*, const void*));
 
 #endif
