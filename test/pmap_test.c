@@ -28,8 +28,8 @@ static struct data *data_search(struct pmnode *root, int key)
 static struct data *data_remove(struct pmnode **root, int key)
 {
 	int index = -1;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	struct pmnode **slot = root;
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	while (*slot) {
 		// <------
 		struct data *curr = container_of(*slot, struct data, node);
@@ -60,8 +60,8 @@ static struct data *data_remove(struct pmnode **root, int key)
 static struct data *data_insert(struct pmnode **root, struct data *data)
 {
 	int index = -1;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	struct pmnode **slot = root;
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
 	while (*slot) {
 		// <------
 		struct data *curr = container_of(*slot, struct data, node);
@@ -196,6 +196,7 @@ static void test_inner(struct data *pdata, int logout)
 
 void pmap_test(int n)
 {
+	srand((unsigned int)time(NULL));
 	struct data *pdata = malloc(SIZE * sizeof(struct data));
 	for (int i = 0; i < SIZE; ++i) {
 		struct data *data = &pdata[i];

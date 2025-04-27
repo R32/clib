@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\src\buffer.c" />
     <ClCompile Include="..\..\src\crlf_counter.c" />
     <ClCompile Include="..\..\src\kuai.c" />
+    <ClCompile Include="..\..\src\mempool.c" />
     <ClCompile Include="..\..\src\pmap.c" />
     <ClCompile Include="..\..\src\rbtree.c" />
     <ClCompile Include="..\..\src\rstream.c" />

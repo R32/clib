@@ -1,6 +1,6 @@
 /*
  * PMap in C language, This code is ported from OCaml ExtLib PMap
- * Copyright (C) 2025 Liuwm
+ * Copyright (C) 2025 LWM
  *
  * To use pmap you'll have to implement your own insert, remove, search and iterater routines.
  * This will avoid us to use callbacks and to drop drammatically performances.
