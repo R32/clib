@@ -7,6 +7,7 @@
 #include "buffer.h"
 #include "strbuf.h"
 #include "wcsbuf.h"
+#include "mempool.h"
 #include "crlf_counter.h"
 
 struct posnum {
@@ -35,6 +36,33 @@ static void buffer()
 	struct posnum dummy = { MAX , 0 };
 	assert(buffer_bsearch(&posbuf, sizeof(struct posnum), &dummy, posnum_compare) == NULL);
 	buffer_release(&posbuf);
+}
+
+static void mempool()
+{
+	struct rect { int x, y, w, h;};
+	struct mempool pool = (struct mempool){ .size = sizeof(struct rect) };
+	const int MAX = 66;
+	for (int i = 0; i < MAX; i++) {
+		struct rect *rect = mempool_alloc(&pool);
+		*rect = (struct rect){ i, -i, MAX - i, MAX + i };
+	}
+	assert(buffer_length(&pool.inner) == MAX);
+	// unsafe index
+	for (int i = 0; i < MAX; i += 2) {
+		struct rect *rect = buffer_index(&pool.inner, pool.size, i);
+		mempool_free(&pool, rect);
+	}
+	// from freelist
+	for (int i = 0; i < MAX; i += 2) {
+		struct rect *rect = mempool_alloc(&pool);
+		*rect = (struct rect){ i, -i, MAX - i, MAX + i };
+	}
+	assert(buffer_length(&pool.inner) == MAX);
+	mempool_reset(&pool);
+	assert(buffer_length(&pool.inner) == 0 && pool.size == sizeof(struct rect));
+	assert(pool.inner.head && pool.inner.head == pool.inner.tail);
+	mempool_release(&pool);
 }
 
 static void crlf_counter()
@@ -172,5 +200,6 @@ void buffer_test()
 	buffer();
 	strbuf();
 	wcsbuf();
+	mempool();
 	crlf_counter();
 }
