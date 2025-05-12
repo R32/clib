@@ -30,6 +30,7 @@
 
 #ifndef LWM_PMAP_H
 #define LWM_PMAP_H
+#include <stddef.h>
 
 struct pmnode {
 	struct pmnode *left;
@@ -37,7 +38,7 @@ struct pmnode {
 	int height;
 };
 
-int pmap_count(struct pmnode *root);
+ int pmap_count(struct pmnode *root);
 void pmap_balance(struct pmnode **slot, int *breakout);
 void pmap_merge(struct pmnode **slot);
 
@@ -46,9 +47,6 @@ static int inline pmap_height(struct pmnode *node)
 	return node ? node->height : 0;
 }
 
-#ifndef NULL
-#   define NULL 0
-#endif
 
 #ifndef container_of
 #   if defined(_MSC_VER) || !defined(__llvm__) // unsafe in msvc
