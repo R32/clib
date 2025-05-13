@@ -29,7 +29,7 @@
     <ClCompile Include="..\..\src\slist.c" />
     <ClCompile Include="..\..\src\strbuf.c" />
     <ClCompile Include="..\..\src\tinyalloc.c" />
-    <ClCompile Include="..\..\src\ucs2.c" />
+    <ClCompile Include="..\..\src\utf8.c" />
     <ClCompile Include="..\..\src\wcsbuf.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
