@@ -28,7 +28,7 @@
 #   if IS_64
 #       define bit_scan_forward _BitScanForward64
 #   else
-        define bit_scan_forward _BitScanForward
+#       define bit_scan_forward _BitScanForward
 #   endif
 static unsigned int __inline TRAILING_ZEROS(size_t x)
 {
@@ -177,7 +177,7 @@ static int block_size(struct slab *slab, void *block)
 	// count bits starting at the next bit point
 	if (begin < BIT_SHIFT_MAX) {
 		bits >>= begin + 1;
-	} else if (index < BMPLONG_INDEX_CEIL(slab_pos(slab))) {
+	} else if (index < (int)BMPLONG_INDEX_CEIL(slab_pos(slab))) {
 		bits = slab->meta.bitmap[index++];
 		begin = -1; // prev begin
 	} else {
