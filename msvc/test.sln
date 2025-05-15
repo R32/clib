@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.1209
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test.vcxproj", "{9EE92EBE-8E91-467A-B081-44CCCC2FF99F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "r32c", "lib\r32c.vcxproj", "{97F38831-D4B8-41E6-8C45-B34EC5044882}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwm", "lib\lwm.vcxproj", "{97F38831-D4B8-41E6-8C45-B34EC5044882}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "static.lib", "static.lib", "{3FE22F7A-5175-4401-A289-AE4912D6FF2C}"
 EndProject

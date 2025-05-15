@@ -1,45 +1,21 @@
 my c language trashbox
 --------
 
-- ~~[`tinyalloc`](src/tinyalloc.c)~~ : Releases all requested memory at once instead of releasing each object separately.
+- `ucs2.c`: `short wchar_t` routines(equivalent to `wchar_t` in MSVC, `char16_t` for others)
 
-  * tinyalloc : The requested memory block can be freed individually.
-  * bumpalloc : The requested memory block cannot be freed individually, you can only call `bumpreset/bumpdestroy` to free all blocks at once
-  * fixedalloc :
+- [`pmap`](src/pmap.c) : PMap(avl tree) in C language, This code is ported from OCaml ExtLib PMap [sample](test/pmap_test.c)
 
-- [`strbuf`](src/strbuf.c): Auto-growing string buffer
+- [`buffer.c`] : auto-growing chunk allocator
 
-  * [`wcsbuf`](src/wcsbuf.c) : The wchar_t version of strbuf
+  - [`strbuf`](src/strbuf.c): auto-growing ansi string buffer
 
-- [`pmap`](src/pmap.c) : PMap in C language, This code is ported from OCaml ExtLib PMap [sample](test/pmap_test.c)
+  - [`ucsbuf`](src/ucsbuf.c) : The uchar version of strbuf
 
-- ~~[`rarray`](src/rarray.c) : Auto-growing arrays(by `realloc`)~~ It's horrible
+  - [`mempool`](src/mempool.c) : fixed-size memory block allocator
 
-  <details><summary>hiden</summary>
-  ```c
-  // rarray_fast_set, rarray_fast_get
-  struct point {
-      int x, y, z;
-  };
-  struct rarray array = { .size = sizeof(struct point), .base = NULL };
-  int len = 16;
-  // you could also call `rarray_grow()` to increase "capacity" only
-  rarray_setlen(&array, len);
-  struct point *ptr = rarray_fast_get(&array, struct point, 0);
-  for (int i = 0; i < len; i++) {
-      *ptr++ = (struct point){ i, i, i };
-  }
-  for (int i = 0; i < len; i++) {
-      struct point *ptr = rarray_fast_get(&array, struct point, i);
-      assert(ptr->x == i && ptr->y == i && ptr->z == i);
-  }
-  rarray_discard(&array);
-  ```
-  </details>
+  - [`crlf_counter`(src/crlf_counter.c)] for lexer/parser to track the '\n' position
 
-- ~~`slist.h`: Singly Linked List.~~ Deprecated
-
-- `ucs2`: wcs_to_utf8, utf8_to_wcs
+- [`kuai.c`](src/kuai.c) : A lightweight first-class heaps allocator.
 
 - [`rjson`](src/rjson.c) :
 
@@ -47,7 +23,9 @@ my c language trashbox
 
 - `list.h`: Doubly Linked List. Copied from [linux/tools/list.h](https://github.com/torvalds/linux/blob/master/tools/include/linux/list.h)
 
-- `rbtree`: Copied from [linux/tools/rbtree.h](https://github.com/torvalds/linux/blob/master/tools/include/linux/rbtree.h)
+- ~~[`tinyalloc`](src/tinyalloc.c) : Releases all requested memory at once instead of releasing each object separately.~~ instead of by `kuai.c`
+
+- ~~`slist.h`: Singly Linked List.~~ Deprecated
 
 ## external links
 

@@ -129,9 +129,10 @@
     <ClCompile Include="..\test\kuai_test.c" />
     <ClCompile Include="..\test\pmap_test.c" />
     <ClCompile Include="..\test\test.c" />
+    <ClCompile Include="..\test\ucs2_test.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="lib\r32c.vcxproj">
+    <ProjectReference Include="lib\lwm.vcxproj">
       <Project>{97f38831-d4b8-41e6-8c45-b34ec5044882}</Project>
     </ProjectReference>
   </ItemGroup>

@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0
+ * Copyright (C) 2025 LWM
+ */
+
 #ifndef LWM_MEM_POOL_H
 #define LWM_MEM_POOL_H
 

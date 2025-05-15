@@ -29,14 +29,16 @@
     <ClCompile Include="..\..\src\slist.c" />
     <ClCompile Include="..\..\src\strbuf.c" />
     <ClCompile Include="..\..\src\tinyalloc.c" />
+    <ClCompile Include="..\..\src\ucs2.c" />
     <ClCompile Include="..\..\src\utf8.c" />
-    <ClCompile Include="..\..\src\wcsbuf.c" />
+    <ClCompile Include="..\..\src\ucsbuf.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{97F38831-D4B8-41E6-8C45-B34EC5044882}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>lwm</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

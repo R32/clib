@@ -6,7 +6,7 @@
 
 #include "buffer.h"
 #include "strbuf.h"
-#include "wcsbuf.h"
+#include "ucsbuf.h"
 #include "mempool.h"
 #include "crlf_counter.h"
 
@@ -14,9 +14,9 @@ struct posnum {
 	int pos;
 	int num;
 };
-static int posnum_compare(const struct posnum *a, const struct posnum *b)
+static int posnum_compare(const void *a, const void *b)
 {
-	return a->pos - b->pos;
+	return ((struct posnum *)a)->pos - ((struct posnum *)b)->pos;
 }
 static void buffer()
 {
@@ -129,20 +129,20 @@ static void strbuf()
 		strbuf_append_char(&buf, '\n');
 		strbuf_append_string(&buf, TEXT, strlen(TEXT));
 	}
-	strbuf_append_double(&buf, 3.1415926535897984626, 17);
+	strbuf_append_double(&buf, 3.1415926535897984626, -1);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_float(&buf, 3.1415926535f, 9);
+	strbuf_append_float(&buf, 3.1415926535f, -1);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_double(&buf, 3.14, 17);
+	strbuf_append_double(&buf, 3.14, -1);
 	strbuf_append_char(&buf, '\n');
-	strbuf_append_float(&buf, 3.f, 9);
+	strbuf_append_float(&buf, 3.f, -1);
 	strbuf_append_char(&buf, '\n');
 
 	char *result = "A101\n" TEXT "B102\n" TEXT "C103\n" TEXT
-		"3.1415926535897984\n"
-		"3.141592741\n"
+		"3.141592653589798\n"
+		"3.1415927\n"
 		"3.14\n"
-		"3.00\n"
+		"3\n"
 		;
 
 	char *ptr = malloc(strbuf_length(&buf) + 1);
@@ -155,41 +155,41 @@ static void strbuf()
 	assert(buf.inner.head == NULL);
 }
 
-static void wcsbuf()
+static void ucsbuf()
 {
-	struct wcsbuf buf = {0};
+	struct ucsbuf buf = {0};
 	#undef TEXT
-	#define TEXT L"the quick brown fox jumped over the lazy dog\n"
+	#define TEXT USTR("the quick brown fox jumped over the lazy dog\n")
 	for (int i = 0; i < 3; i++) {
-		wcsbuf_append_char(&buf, 'A' + i);
-		wcsbuf_append_int(&buf, 101 + i);
-		wcsbuf_append_char(&buf, '\n');
-		wcsbuf_append_string(&buf, TEXT, wcslen(TEXT));
+		ucsbuf_append_char(&buf, 'A' + i);
+		ucsbuf_append_int(&buf, 101 + i);
+		ucsbuf_append_char(&buf, '\n');
+		ucsbuf_append_string(&buf, TEXT, ucslen(TEXT));
 	}
-	wcsbuf_append_double(&buf, 3.1415926535897984626, 17);
-	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_float(&buf, 3.1415926535f, 9);
-	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_double(&buf, 3.14, 17);
-	wcsbuf_append_char(&buf, '\n');
-	wcsbuf_append_float(&buf, 3.f, 9);
-	wcsbuf_append_char(&buf, '\n');
+	ucsbuf_append_double(&buf, 3.1415926535897984626, -1);
+	ucsbuf_append_char(&buf, '\n');
+	ucsbuf_append_float(&buf, 3.1415926535f, -1);
+	ucsbuf_append_char(&buf, '\n');
+	ucsbuf_append_double(&buf, 3.14, -1);
+	ucsbuf_append_char(&buf, '\n');
+	ucsbuf_append_float(&buf, 3.f, -1);
+	ucsbuf_append_char(&buf, '\n');
 
-#	define HANG_ZI L"ÖÐÎÄºº×Ö\n"
-	wcsbuf_append_string(&buf, HANG_ZI, wcslen(HANG_ZI));
-	wchar_t *result = L"A101\n" TEXT L"B102\n" TEXT L"C103\n" TEXT
-		L"3.1415926535897984\n"
-		L"3.141592741\n"
-		L"3.14\n"
-		L"3.00\n"
+#	define HANG_ZI USTR("ä¸‡èˆ¬çš†ä¸‹å“\n")
+	ucsbuf_append_string(&buf, HANG_ZI, ucslen(HANG_ZI));
+	uchar *result = USTR("A101\n") TEXT USTR("B102\n") TEXT USTR("C103\n") TEXT
+		USTR("3.141592653589798\n")
+		USTR("3.1415927\n")
+		USTR("3.14\n")
+		USTR("3\n")
 		HANG_ZI
 		;
-	wchar_t *ptr = malloc((wcsbuf_length(&buf) + 1) * sizeof(wchar_t));
-	wcsbuf_to_string(&buf, ptr);
+	uchar *ptr = malloc((ucsbuf_length(&buf) + 1) * sizeof(uchar));
+	ucsbuf_to_string(&buf, ptr);
 	//printf("length: %d\n%ls\n", buf.length, ptr);
-	assert(wcslen(ptr) == wcslen(result) && wcscmp(ptr, result) == 0);
+	assert(ucslen(ptr) == ucslen(result) && ucscmp(ptr, result) == 0);
 	free(ptr);
-	wcsbuf_reset(&buf);
+	ucsbuf_reset(&buf);
 	assert(buf.inner.head && buf.inner.head == buf.inner.tail && strbuf_length(&buf) == 0);
 	strbuf_release(&buf);
 	assert(buf.inner.head == NULL);
@@ -199,7 +199,7 @@ void buffer_test()
 {
 	buffer();
 	strbuf();
-	wcsbuf();
+	ucsbuf();
 	mempool();
 	crlf_counter();
 }

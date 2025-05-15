@@ -1,5 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-2.0
+ * Copyright (C) 2023-2025 LWM
  */
 
 #ifndef R_LEX_H

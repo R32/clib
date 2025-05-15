@@ -30,7 +30,7 @@
     <ClCompile Include="..\..\src\strbuf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\wcsbuf.c">
+    <ClCompile Include="..\..\src\ucsbuf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\rstream.c">
@@ -49,6 +49,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\mempool.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ucs2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

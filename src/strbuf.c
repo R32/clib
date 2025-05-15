@@ -1,11 +1,12 @@
 /*
  * SPDX-License-Identifier: GPL-2.0
+ * Copyright (C) 2025 LWM
  *
  * most of this code is stolen from the hashlink/buffer.c by Haxe Foundation
  */
 
-#include <float.h>
-#include <stdio.h> // snprintf
+#include <stdio.h>  // snprintf
+#include <string.h> // memcpy
 #include "strbuf.h"
 
 #define CHK_HEAD(buf) ((buf)->inner.head)
@@ -55,56 +56,38 @@ void strbuf_append_string(struct strbuf *buf, char *string, int len)
 	strbuf_append_new(buf, string, len);
 }
 
-void strbuf_append_int(struct strbuf *buf, int i)
-{
-	char array[16];
-	int len = snprintf(array, 16, "%d", i);
-	strbuf_append_string(buf, array, len);
-}
-
-static int trim_tail_zeros(char *ptr, int len)
-{
-	int i = 0;
-	while (i < len && ptr[i++] != '.') {
-	}
-	i += 2; // Keep at least 2 zeros
-	int count = 0;
-	while (i < len) {
-		if (ptr[i++] != '0') {
-			count = 0;
-			continue;
-		}
-		count++;
-		if (i == len || count == 3)
-			return i - count;
-	}
-	return len;
-}
-
 #ifdef _MSC_VER
 #   ifndef snprintf
 #       define snprintf _snprintf
 #   endif
 #endif
 
-void strbuf_append_float(struct strbuf *buf, float f, int fixed)
+void strbuf_append_int(struct strbuf *buf, int i)
+{
+	char array[12];
+	int len = snprintf(array, 12, "%d", i);
+	strbuf_append_string(buf, array, len);
+}
+
+
+void strbuf_append_float(struct strbuf *buf, float f, int precision)
 {
 	char array[16];
 	int len;
-	if (fixed <= 0)
-		fixed = 9;
-	len = snprintf(array, 16, "%.*f", fixed, f);
-	strbuf_append_string(buf, array, trim_tail_zeros(array, len));
+	if (precision < 0)
+		precision = 8;
+	len = snprintf(array, 16, "%.*g", precision, f);
+	strbuf_append_string(buf, array, len);
 }
 
-void strbuf_append_double(struct strbuf *buf, double lf, int fixed)
+void strbuf_append_double(struct strbuf *buf, double lf, int precision)
 {
 	char array[32];
 	int len;
-	if (fixed <= 0)
-		fixed = 17;
-	len = snprintf(array, 32, "%.*g", fixed, lf + DBL_EPSILON);
-	strbuf_append_string(buf, array, trim_tail_zeros(array, len));
+	if (precision < 0)
+		precision = 16;
+	len = snprintf(array, 32, "%.*g", precision, lf);
+	strbuf_append_string(buf, array, len);
 }
 
 /*
