@@ -68,6 +68,6 @@ int dtoua(double value, uchar *out, int precision, int fixed);
 /*
  * uchar string <=> utf8 string
  */
-int ucstoutf(char *dst, const uchar *src, int max);
-int utftoucs(uchar *dst, const char *src, int max);
+int ucs_to_utf8(unsigned char *dst, const uchar *src, int max);
+int utf8_to_ucs(uchar *dst, const unsigned char *src, int max);
 #endif

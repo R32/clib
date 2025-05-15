@@ -54,7 +54,7 @@ void ucs2_test()
 			int v;
 			int invalid;
 		} list[] = {
-			{USTR("-2147483648"), -2147483648}, // LONG_MIN
+			{USTR("-2147483648"), -2147483648},  // LONG_MIN
 			{USTR("2147483647") ,  2147483647},  // LONG_MAX
 			{USTR("0")          ,        0},
 			{USTR("0x101")      ,    0x101},
@@ -135,7 +135,7 @@ void ucs2_test()
 			{-INFINITY , USTR("-inf")    , -1, 0},
 			{3.1415926f, USTR("3.141593"),  7, 0},
 			{1.f + 2.f , USTR("3.00")    , -1, 2},
-			{0.0001234 , USTR("0.000123"),  3, 0},
+			{0.0001234f , USTR("0.000123"), 3, 0},
 			{-9.99995f , USTR("-10")     ,  5, 0},
 			{9.99995f  , USTR("10")      ,  5, 0},
 		};
@@ -169,7 +169,22 @@ void ucs2_test()
 			i++;
 		}
 	}
-	{ // ucstoutf, utftoucs
 
+	{ // ucstoutf, utftoucs
+		uchar *text = // Visual Studio cannot properly save Unicode characters in UTF-8 without BOM
+			USTR("\x5f85\x5230\x79cb\x6765\x4e5d\x6708\x516b\x2c")
+			USTR("\x6211\x82b1\x5f00\x540e\x767e\x82b1\x6740\x2c")
+			USTR("\x51b2\x5929\x9999\x9635\x900f\x957f\x5b89\x2c")
+			USTR("\x6ee1\x57ce\x5c3d\x5e26\x9ec4\x91d1\x7532\x2e")
+			USTR("\xd863\xdc3b") // surrogate pair
+		;
+		char  aa[128];
+		uchar uu[64];
+		int asize = ucs_to_utf8(NULL, text, -1);
+		assert(ucs_to_utf8(aa, text, asize + 1) == asize);
+		int usize = utf8_to_ucs(NULL, aa, -1);
+		assert(usize == ucslen(text));
+		assert(utf8_to_ucs(uu, aa, usize + 1) == usize);
+		assert(ucscmp(uu, text) == 0);
 	}
 }

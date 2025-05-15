@@ -175,7 +175,7 @@ static void ucsbuf()
 	ucsbuf_append_float(&buf, 3.f, -1);
 	ucsbuf_append_char(&buf, '\n');
 
-#	define HANG_ZI USTR("万般皆下品\n")
+#	define HANG_ZI USTR("QWERT\n")
 	ucsbuf_append_string(&buf, HANG_ZI, ucslen(HANG_ZI));
 	uchar *result = USTR("A101\n") TEXT USTR("B102\n") TEXT USTR("C103\n") TEXT
 		USTR("3.141592653589798\n")

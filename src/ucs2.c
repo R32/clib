@@ -522,10 +522,9 @@ exit:
  * 
  * @return : The number of bytes written to 'dst' (not including NULL terminator)
  */
-int ucstoutf(char *dst, const uchar *src, int max)
+int ucs_to_utf8(unsigned char *dst, const uchar *src, int max)
 {
-	int ch;
-	int i = 0;
+	int i = 0, ch;
 	if (dst == NULL) {
 		while ((ch = *src++)) {
 			if (ch < 0x80) {
@@ -543,8 +542,7 @@ int ucstoutf(char *dst, const uchar *src, int max)
 		return i;
 	}
 	int k, c2;
-	while (i < max) {
-		ch = *src++;
+	while (i < max && (ch = *src++)) {
 		if (ch < 0x80) {
 			dst[i++] = ch;
 		} else if (ch < 0x800) {
@@ -577,10 +575,10 @@ int ucstoutf(char *dst, const uchar *src, int max)
  * 
  * @return : The number of **uchar(wide)** characters written to 'dst' (not including NULL terminator).
  */
-int utftoucs(uchar *dst, const char *src, int max)
+int utf8_to_ucs(uchar *dst, const unsigned char *src, int max)
 {
 	int acc = 0, ch, c2, c3, c4;
-	if (dst == NULL || max == 0) {
+	if (dst == NULL) {
 		while ((ch = *src++)) {
 			if (ch < 0x80) {
 			} else if (ch < 0xE0) {
@@ -604,11 +602,8 @@ int utftoucs(uchar *dst, const char *src, int max)
 		}
 		return acc;
 	}
-	while (acc < max) {
-		ch = *src++;
+	while ((acc < max) && (ch = *src++)) {
 		if (ch < 0x80) {
-		} else if (ch < 0xC0) {
-			break;
 		} else if (ch < 0xE0) {
 			c2 = *src++;
 			if (!(c2 & 0x80))
