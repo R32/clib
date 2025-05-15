@@ -39,7 +39,7 @@ void ucsbuf_append_string(struct ucsbuf *buf, uchar *string, int len)
 	if (!string)
 		return;
 	if (len < 0)
-		len = wcslen(string);
+		len = ucslen(string);
 	struct chunk *chk = CHK_TAIL(buf);
 	if (chk) {
 		int rest = chk->len - chk->pos;
@@ -80,9 +80,9 @@ void ucsbuf_append_double(struct ucsbuf *buf, double g, int precision)
 
 /*
  * ```c
- * int len = wcsbuf_length(buf);
- * uchar *wcs = malloc((len + 1) * uchar);
- * wcsbuf_to_string(buf, wcs);
+ * int len = ucsbuf_length(buf);
+ * uchar *ucs = malloc((len + 1) * uchar);
+ * ucsbuf_to_string(buf, ucs);
  * ```
  */
 void ucsbuf_to_string(struct ucsbuf *buf, uchar *out)
