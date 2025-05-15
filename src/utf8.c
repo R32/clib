@@ -101,7 +101,7 @@ int wcstoutf8(unsigned char *out, const unsigned short *src, int srcnt)
 			} else if (c < 0x800) {
 				i += 2;
 			} else if (c >= 0xD800 && c <= 0xDFFF) { // surrogate pair
-				if (src == end)
+				if (src++ == end)
 					break;
 				i += 4;
 			} else {
