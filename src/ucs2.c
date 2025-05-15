@@ -103,21 +103,94 @@ uchar *ucsstr(const uchar *ucs, const uchar *sub)
 	return NULL;
 }
 
+#define lower(ch)  ((ch) | 0x20)
+
+double ucstod(const uchar *ucs, uchar **end)
+{
+	const uchar *head = ucs;
+	// skips
+	int ch = *head++;
+	while (isspace(ch))
+		ch = *head++;
+
+	int neg = ch == '-';
+	if (neg || ch == '+')
+		ch = *head++;
+
+	const uchar *ptr = head;
+
+	double value = 0.;
+	while (isdigit(ch)) {
+		value = value * 10. + (ch - '0');
+		ch = *ptr++;
+	}
+	if (ch == '.') {
+		head += ptr == head;
+		ch = *ptr++;
+		double fract = 1.;
+		while (isdigit(ch)) {
+			fract *= 0.1;
+			value += fract * (ch - '0');
+			ch = *ptr++;
+		}
+	}
+	#define NOT_EMPTY()  (ptr > head)
+	#define NO_DOT()     (ucs == head || head[-2] != '.')
+	if (!isalpha(ch))
+		goto exit;
+	ch = lower(ch);
+	if (NOT_EMPTY() && ch == 'e') {
+		ch = *ptr++;
+		int exp = 0;
+		double base = ch == '-' ? 0.1 : 10.;
+		if (ch == '-' || ch == '+')
+			ch = *ptr++;
+
+		while (isdigit(ch)) {
+			exp = 10 * exp + (ch - '0');
+			ch = *ptr++;
+		}
+		while (exp) {
+			if (exp & 1)
+				value *= base;
+			exp >>= 1;
+			base *= base;
+		}
+	} else if (NOT_EMPTY() && (ch == 'l' || ch == 'f')) {
+		ptr++;
+	} else if (ch == 'n' && lower(head[0]) == 'a' && lower(head[1]) == 'n' && NO_DOT()) {
+		value = -(1e300 * 1e300 * 0.0);
+		ptr += 3;
+	} else if (ch == 'i' && lower(head[0]) == 'n' && lower(head[1]) == 'f' && NO_DOT()) {
+		value = 1e300 * 1e300;
+		ptr += 3;
+	}
+exit:
+	if (end)
+		*end = (uchar *)(NOT_EMPTY() ? ptr - 1 : ucs);
+	return neg ? -value : value;
+#undef NOT_EMPTY
+#undef NO_DOT
+}
+
 /*
  * NOTE : If overflows, the result is unspecified.
  */
 long ucstol(const uchar *ucs, uchar **end, int base)
 {
-	const uchar *ptr = ucs;
-	// skip
-	int ch = *ptr++;
+	const uchar *head = ucs;
+
+	// skips
+	int ch = *head++;
 	while (isspace(ch))
-		ch = *ptr++;
+		ch = *head++;
 
 	int neg = ch == '-';
 	if (neg || ch == '+')
-		ch = *ptr++;
+		ch = *head++;
 
+	const uchar *ptr = head;
+	#define NOT_EMPTY() (ptr > head)
 	long dig = 0;
 	if (base == 0) { // auto base
 		if (ch == '0' && (*ptr == 'x' || *ptr == 'X')) {
@@ -128,9 +201,7 @@ long ucstol(const uchar *ucs, uchar **end, int base)
 			base = 10;
 		}
 	} else if (base < 2 || base > 36) { // bad base
-		if (end)
-			*end = (uchar *)ucs;
-		return 0L;
+		goto exit;
 	}
 	if (base <= 10) {
 		while (isdigit(ch)) {
@@ -143,7 +214,7 @@ long ucstol(const uchar *ucs, uchar **end, int base)
 			if (isdigit(ch)) {
 				x = ch - '0';
 			} else if (isalpha(ch)) {
-				x = (ch | 0x20) - 'a' + 10;
+				x = lower(ch) - 'a' + 10;
 				if (x > base)
 					break;
 			} else {
@@ -153,11 +224,21 @@ long ucstol(const uchar *ucs, uchar **end, int base)
 			ch = *ptr++;
 		}
 	}
+	// skip suffix
+	if (NOT_EMPTY() && isalpha(ch)) {
+		ch = lower(ch);
+		if (ch == 'u') {
+			ptr += 1 + (lower(ptr[0]) == 'l');
+		} else if (ch == 'l') {
+			ptr++;
+		}
+	}
+exit:
 	if (end)
-		*end = (uchar *)(ptr - 1);
+		*end = (uchar *)(NOT_EMPTY() ? ptr - 1 : ucs);
 	return neg == 0 ? -dig : dig;
+	#undef NOT_EMPTY
 }
-
 
 #endif
 

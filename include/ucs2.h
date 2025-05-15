@@ -44,11 +44,14 @@
 	uchar *ucsrchr(const uchar* ucs, uchar ch);
 	uchar *ucsstr(const uchar *ucs, const uchar *sub);
 
-	//double ucstod(const uchar *ucs, uchar **end);
-	//float ucstof(const uchar *ucs, uchar **end);
+	double ucstod(const uchar *ucs, uchar **end);
 	long ucstol(const uchar *ucs, uchar **end, int base);
+	#define ucstof(u, e)  ((float)ucstod(u, e))
 #endif
 
+/*
+ * Convert 'int' to uchar string
+ */
 int itoua(int value, uchar *out);
 int uitoua(unsigned int value, uchar *out);
 int uitoua16(unsigned int value, uchar *out);
@@ -56,9 +59,15 @@ int i64toua(long long value, uchar *out);
 int u64toua(unsigned long long num, uchar *out);
 int u64toua16(unsigned long long num, uchar *out);
 
+/*
+ * Convert 'float' to uchar string
+ */
 int ftoua(float value, uchar *out, int precision, int fixed);
 int dtoua(double value, uchar *out, int precision, int fixed);
 
-int ucstoutf(char *dst, const uchar *src, int size);
-int utftoucs(uchar *dst, const char *src, int size);
+/*
+ * uchar string <=> utf8 string
+ */
+int ucstoutf(char *dst, const uchar *src, int max);
+int utftoucs(uchar *dst, const char *src, int max);
 #endif

@@ -5,6 +5,7 @@
 #include <time.h>
 #include <wchar.h>
 #include <limits.h>
+#include <float.h>
 #include <math.h>
 #include "ucs2.h"
 
@@ -50,21 +51,75 @@ void ucs2_test()
 		uchar *end;
 		struct {
 			uchar *s;
-			int r;
+			int v;
+			int invalid;
 		} list[] = {
 			{USTR("-2147483648"), -2147483648}, // LONG_MIN
 			{USTR("2147483647") ,  2147483647},  // LONG_MAX
 			{USTR("0")          ,        0},
 			{USTR("0x101")      ,    0x101},
-			{USTR("1")          ,        1},
-			{USTR("-1")         ,       -1},
+			{USTR("1U")          ,       1},
+			{USTR("1L")          ,       1},
+			{USTR("1uL")          ,      1},
+			{USTR("-1")         ,       -1,},
+			// invalid int
+			{USTR("+")         ,         0, 1},
+			{USTR("-")         ,         0, 1},
+			{USTR("l")         ,         0, 1},
 		};
 		int i = 0;
 		while (i < sizeof(list) / sizeof(list[0])) {
 			uchar *ucs = list[i].s;
+			int invalid = list[i].invalid;
 			uchar *tmp = ucs + ucslen(ucs);
-			assert(ucstol(ucs, &end, 0) == list[i].r);
-			assert(end == tmp);
+			assert(ucstol(ucs, &end, 0) == list[i].v);
+			assert(invalid ? end == ucs : end == tmp);
+			i++;
+		}
+		// bad base
+		assert(ucstol(list[0].s, &end, 37) == 0 && end == list[0].s);
+	}
+	{ // ucstod
+		uchar *end;
+		struct {
+			uchar *s;
+			double v;
+			int invalid;
+		} list[] = {
+			{USTR("NAN")  ,       NAN},
+			{USTR("INF")  ,  INFINITY},
+			{USTR("-INF") ,  -INFINITY},
+			// invalid string
+			{USTR("+") ,  0, 1},
+			{USTR("-") ,  0, 1},
+			{USTR(".") ,  0, 1},
+			{USTR("f") ,  0, 1},
+			{USTR("e") ,  0, 1},
+			{USTR("+e") , 0, 1},
+			{USTR("-f") , 0, 1},
+			{USTR(".nan") , 0, 1},
+			{USTR(".inf") , 0, 1},
+			// normal
+			{USTR("1.23e5") ,  1.23e5},
+			{USTR("1.23e-5") ,  1.23e-5},
+			{USTR("3.1415926535") ,  3.1415926535},
+			{USTR("-3.1415926535") ,  -3.1415926535},
+		};
+		assert(isnan(ucstod(list[0].s, &end)) && (end - list[0].s) == 3);
+		int i = 1; // inf, -inf
+		while (i < 3) {
+			uchar *ucs = list[i].s;
+			double ret = ucstod(ucs, &end);
+			assert(ret == list[i].v);
+			assert(end == ucs + ucslen(ucs));
+			i++;
+		}
+		while (i < sizeof(list) / sizeof(list[0])) {
+			uchar *ucs = list[i].s;
+			int invalid = list[i].invalid;
+			double ret = ucstod(ucs, &end);
+			assert(invalid ? ret == 0.  : fabs(ret - list[i].v) < DBL_EPSILON);
+			assert(invalid ? end == ucs : end == ucs + ucslen(ucs));
 			i++;
 		}
 	}
