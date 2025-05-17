@@ -66,9 +66,6 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 // byte to bitmap index
 #define BMPLONG_INDEX(p)          ((p) / BMPLONG_CBS)
 
-// ceil(byte) to bitmap index
-#define BMPLONG_INDEX_CEIL(p)     (BMPLONG_INDEX( (p) + (BMPLONG_CBS - BLK_BASE)))
-
 // bit position in [0-31] or [0-63]
 #define BMPLONG_BIT_POSITION(p)   (((p) % BMPLONG_CBS) / BLK_BASE)
 
@@ -177,7 +174,7 @@ static int block_size(struct slab *slab, void *block)
 	// count bits starting at the next bit point
 	if (begin < BIT_SHIFT_MAX) {
 		bits >>= begin + 1;
-	} else if (index < (int)BMPLONG_INDEX_CEIL(slab_pos(slab))) {
+	} else if (index < BMPLONG_SIZE) { // BMPLONG_SIZE is safe
 		bits = slab->meta.bitmap[index++];
 		begin = -1; // prev begin
 	} else {
@@ -186,8 +183,7 @@ static int block_size(struct slab *slab, void *block)
 	if (bits)
 		return (1 + TRAILING_ZEROS(bits)) * BLK_BASE;
 	int cnt = BIT_CNT_MAX - begin;
-	int max = BMPLONG_INDEX_CEIL(slab_pos(slab));
-	while (index < max) {
+	while (index < BMPLONG_SIZE) {
 		bits = slab->meta.bitmap[index++];
 		if (bits) {
 			cnt += TRAILING_ZEROS(bits);
