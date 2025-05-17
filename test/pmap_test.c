@@ -140,6 +140,15 @@ static void data_iter_forward(struct pmnode *root) {
 	// <------
 }
 
+static int pmap_real_height(struct pmnode *node)
+{
+	if (node == NULL)
+		return 0;
+	int left = pmap_real_height(node->left);
+	int right = pmap_real_height(node->right);
+	return 1 + (left > right ? left : right);
+}
+
 #ifndef SIZE
 #   define SIZE (16 * 8192)
 #endif
@@ -178,6 +187,8 @@ static void test_inner(struct data *pdata, int logout)
 		struct data *data = &pdata[i];
 		struct data *find = data_search(root, data->key);
 		assert(data == find);
+		if (i < 1024)
+			assert(pmap_real_height(&data->node) == data->node.height);
 	}
 	t = clock() - t;
 	if (logout) printf("  Finding count : %d, time : %.6f\n", SIZE, ((double)t) / CLOCKS_PER_SEC);

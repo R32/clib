@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "kuai.h"
+#include "pmap.h"
 
 #ifndef ALIGN_UP
 #   define ALIGN_UP(size, alignment) (((size) + (alignment) - 1) & ~((alignment) - 1))
@@ -245,6 +246,91 @@ static inline int free_index(unsigned int size)
 {
 	int i = size / BLK_BASE;
 	return i < KFREELIST_MAX ? i : 0;
+}
+
+/*
+ * large free block, for size >= KFREELIST_MAX, sizeof == 48 bytes
+ */
+struct lafblock {
+	struct pmnode node;
+	struct lafblock *next;
+	struct slab *owner;
+	int size;
+};
+#if (KFREELIST_MAX < 6)
+#   error KFREELIST_MAX
+#endif
+#define FREE_LAFB(m)      (*(struct lafblock **)(m))
+static struct lafblock *lafblock_remove(struct pmnode **root, int size)
+{
+	int index = -1;
+	int previ = -1;
+	struct pmnode **slot = root;
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	while (*slot) {
+		struct lafblock *curr = container_of(*slot, struct lafblock, node);
+		int cmp = size - curr->size;
+		if (cmp == 0)
+			break;
+		pmap_stacks[++index] = slot;
+		if (cmp < 0) {
+			previ = index;
+			slot = &(*slot)->left;
+		} else {
+			slot = &(*slot)->right;
+		}
+	}
+	struct pmnode *victim = *slot;
+	if (victim == NULL) {
+		if (previ < 0)
+			return NULL;
+		slot = pmap_stacks[previ];
+		victim = *slot;
+		index = previ - 1;
+	}
+	struct lafblock *lafb = container_of(victim, struct lafblock, node);
+	if (lafb->next) {
+		struct pmnode *next = &lafb->next->node;
+		*next = lafb->node; // copy datas
+		*slot = next;       // linking
+		return lafb;
+	}
+	pmap_merge(slot);
+	while (index >= 0) {
+		pmap_balance(pmap_stacks[index--], &index);
+	}
+	return lafb;
+}
+static void lafblock_insert(struct pmnode **root, struct lafblock *lafb)
+{
+	int index = -1;
+	struct pmnode **slot = root;
+	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	while (*slot) {
+		struct lafblock *curr = container_of(*slot, struct lafblock, node);
+		int cmp = lafb->size - curr->size;
+		pmap_stacks[++index] = slot;
+		if (cmp < 0) {
+			slot = &(*slot)->left;
+		} else if (cmp > 0) {
+			slot = &(*slot)->right;
+		} else {
+			lafb->node = curr->node;
+			lafb->next = curr;
+			*slot = &lafb->node; // linking
+			return;
+		}
+	}
+	// init for new one
+	lafb->node = (struct pmnode){.left = NULL, .right = NULL, .height = 1};
+	lafb->next = NULL;
+	// link node to the NULL place.
+	*slot = &lafb->node;
+
+	// do balancing
+	while (index >= 0) {
+		pmap_balance(pmap_stacks[index--], &index);
+	}
 }
 
 static void *free_pickup(struct kuai *kuai, int size)

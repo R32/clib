@@ -6,6 +6,7 @@ OBJ      := obj
 EXE      := test.exe
 LIB      := liblwm.a
 CFLAGS   :=
+LDFLAGS  :=
 INCLUDES := -I$(INC)
 OBJS     := buffer.o strbuf.o ucsbuf.o mempool.o crlf_counter.o \
             rstream.o pmap.o kuai.o ucs2.o
@@ -36,7 +37,7 @@ $(OBJ):
 	@mkdir -p $@
 
 $(EXE): $(OBJ)/test.o $(TEST_OBJS:%.o=$(OBJ)/%.o) $(LIB)
-	$(CC) $(INCLUDES) $(CFLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 $(LIB): $(OBJS:%.o=$(OBJ)/%.o)
 	ar rcs $@ $^

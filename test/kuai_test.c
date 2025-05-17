@@ -87,9 +87,61 @@ void shuffle(void *a[], int len)
 	}
 }
 
+static int pmap_real_height(struct pmnode *node)
+{
+	if (node == NULL)
+		return 0;
+	int left = pmap_real_height(node->left);
+	int right = pmap_real_height(node->right);
+	return 1 + (left >= right ? left : right);
+}
+
+static void kuai_with_pmap()
+{
+	struct pmnode *root = NULL;
+	assert(lafblock_remove(&root, BLK_BASE) == NULL);
+
+	#define CNT 256
+	#define DIV   8
+	struct lafblock lafs[CNT];
+	for (int i = 0; i < CNT; i++) {
+		lafs[i].size = (i % DIV) * BLK_BASE;
+		lafblock_insert(&root, &lafs[i]);
+	}
+	assert(pmap_count(root) == DIV);
+	// final group
+	for (int i = CNT - DIV; i < CNT; i++) {
+		int count = 0;
+		struct lafblock *ptr = &lafs[i];
+		while (ptr) {
+			count++;
+			ptr = ptr->next;
+		}
+		assert(count == CNT / DIV);
+	}
+	for (int i = 0; i < CNT - DIV; i++) {
+		int size = (i % DIV) * BLK_BASE;
+		struct lafblock *blk = lafblock_remove(&root, size);
+		assert(blk && blk->size == size);
+	}
+	// first group
+	for (int i = 0; i < DIV; i++) {
+		struct lafblock *blk = &lafs[i];
+		assert(blk->next == NULL);
+		assert(pmap_real_height(&blk->node) == blk->node.height);
+	}
+	assert(pmap_count(root) == DIV);
+	// clear final group
+	for (int i = CNT - DIV; i < CNT; i++) {
+		int size = (i % DIV) * BLK_BASE;
+		struct lafblock *blk = lafblock_remove(&root, size);
+		assert(blk && blk->size == size);
+	}
+	assert(root == NULL);
+}
+
 static void kuai_test_inner(int log)
 {
-	
 #define kt_alloc(size)     kuai_alloc(&kuai, size)
 #define kt_free(ptr)       kuai_free(&kuai, ptr)
 #define kt_validate(b)     slab_validate(&kuai, b)
@@ -210,6 +262,7 @@ static void kuai_test_inner(int log)
 void kuai_test(int n)
 {
 	srand((uint32_t)time(NULL));
+	kuai_with_pmap();
 	for (int i = 0; i < n; i++) {
 		kuai_test_inner(0);
 	}
