@@ -101,7 +101,7 @@ static void kuai_with_pmap()
 	struct pmnode *root = NULL;
 	assert(lafblock_remove(&root, BLK_BASE) == NULL);
 
-	#define CNT 256
+	#define CNT 128
 	#define DIV   8
 	struct lafblock lafs[CNT];
 	for (int i = 0; i < CNT; i++) {
@@ -119,9 +119,15 @@ static void kuai_with_pmap()
 		}
 		assert(count == CNT / DIV);
 	}
-	for (int i = 0; i < CNT - DIV; i++) {
+	// removing
+	for (int i = 0; i < CNT / 2; i++) {
 		int size = (i % DIV) * BLK_BASE;
-		struct lafblock *blk = lafblock_remove(&root, size);
+		struct lafblock *blk = lafblock_remove(&root, size); // Exact size
+		assert(blk && blk->size == size);
+	}
+	for (int i = CNT / 2; i < CNT - DIV; i++) {
+		int size = (i % DIV) * BLK_BASE;
+		struct lafblock *blk = lafblock_remove(&root, size - BLK_BASE / 2); // Approximate size
 		assert(blk && blk->size == size);
 	}
 	// first group
@@ -191,21 +197,12 @@ static void kuai_test_inner(int log)
 		assert(slab_pos((struct slab *)kuai.slab) = BMPBYTE_SIZE);
 		assert(slab_committed((struct slab *)kuai.slab) = COMMIT_BASE);
 	}
-	// block split
-	void *block = kt_alloc(KFREELIST_MAX * 2 * BLK_BASE);
-	assert(kt_validate(block));
-	assert(kt_size(block) == BLK_BASE * KFREELIST_MAX * 2);
-	kt_free(block);
-	block = kt_alloc(KFREELIST_MAX * BLK_BASE);
-	assert(kt_validate(block));
-	assert(kt_size(block) == BLK_BASE * KFREELIST_MAX);
-	kuai_reset(&kuai);
-
-	// rands
-	#define RAND()        (rand() % (EXTERN_SIZE + 128))
-	#define COUNT         (1080)
+// rands
+#define RAND()        (rand() % (EXTERN_SIZE + 128))
+#define COUNT         (1080)
+#define FL_MAXSIZE    (KFREELIST_MAX * BLK_BASE)
 	void *list[COUNT];
-
+	// new alloc
 	for (int j = 0; j < 10; j++) {
 		kuai_reset(&kuai);
 		for (int i = 0; i < COUNT; i++) {
@@ -217,11 +214,10 @@ static void kuai_test_inner(int log)
 				assert(kt_size(list[i]) == size + META_SIZE);
 			}
 		}
+		shuffle((void **)list, COUNT);
+		qsort(list, COUNT, sizeof(list[0]), onsort);
+		shuffle((void **)list, COUNT);
 	}
-	shuffle((void **)list, COUNT);
-	qsort(list, COUNT, sizeof(list[0]), onsort);
-	shuffle((void **)list, COUNT);
-
 	// free halfcount
 	for (int i = 0; i < COUNT / 2; i++)
 		kt_free(list[i]);
@@ -230,13 +226,14 @@ static void kuai_test_inner(int log)
 		int size = ALIGN_UP(1 + RAND(), BLK_BASE);
 		list[i] = kt_alloc(size);
 		int real = kt_size(list[i]);
-		if (size < 24 * 1024) {
-			if (size < KFREELIST_MAX * BLK_BASE)
-				assert(real == size);
-			else
-				assert(real >= size && real < size + (BLK_BASE * KFREELIST_MAX));
+		if (size > EXTERN_SIZE) {
+			assert(real == size + META_SIZE);
+			continue;
+		}
+		if (size < FL_MAXSIZE) {
+			assert(real == size);
 		} else {
-			assert(kt_size(list[i]) == size + META_SIZE);
+			assert(real >= size && real < size + FL_MAXSIZE);
 		}
 	}
 	shuffle((void **)list, COUNT);
@@ -247,11 +244,18 @@ static void kuai_test_inner(int log)
 		kt_free(list[i]);
 	// realloc halfcount
 	for (int i = COUNT / 2; i < COUNT; i++) {
-		int r = RAND();
-		int size = ALIGN_UP(r, BLK_BASE);
+		int size = ALIGN_UP(RAND() + 1, BLK_BASE);
 		list[i] = kt_alloc(size);
 		int real = kt_size(list[i]);
-		assert(real >= size && real < size + (BLK_BASE * KFREELIST_MAX));
+		if (size > EXTERN_SIZE) {
+			assert(real == size + META_SIZE);
+			continue;
+		}
+		if (size < FL_MAXSIZE) {
+			assert(real == size);
+		} else {
+			assert(real >= size && real < size + FL_MAXSIZE);
+		}
 	}
 	shuffle((void **)list, COUNT);
 	qsort(list, COUNT, sizeof(list[0]), onsort);

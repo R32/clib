@@ -260,7 +260,9 @@ struct lafblock {
 #if (KFREELIST_MAX < 6)
 #   error KFREELIST_MAX
 #endif
-#define FREE_LAFB(m)      (*(struct lafblock **)(m))
+#define PMAP_LAFB(m)   ((struct lafblock *)(m))
+#define PMAP_ROOT(k)   ((struct pmnode **)&(k)->freelist[0])
+
 static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 {
 	int index = -1;
@@ -336,38 +338,24 @@ static void lafblock_insert(struct pmnode **root, struct lafblock *lafb)
 static void *free_pickup(struct kuai *kuai, int size)
 {
 	int i = free_index(size);
-	void *block = FREE_HEAD(kuai, i);
-	if (block && i) {
-		FREE_HEAD(kuai, i) = FREE_NEXT(block);
-		return block;
-	}
-	void *prev = NULL;
-	// TODO : use PMAP instead of here.
-	while (block) {
-		struct slab *slab = OWNERSLAB(block);
-		int real = block_size(slab, block);
-		if (real < size) {
-			prev  = block;
-			block = FREE_NEXT(block);
-			continue;
-		}
-		if (real >= size + (BLK_BASE * KFREELIST_MAX)) { // Do Splits
-			void *next = BPTR(block) + size;
-			block_split(slab, next);
-			OWNERSLAB(next)  = slab;
-			FREE_NEXT(next)  = FREE_NEXT(block);
-			FREE_NEXT(block) = next;
-		}
-		if (prev) {
-			FREE_NEXT(prev) = FREE_NEXT(block);
-		} else {
+	if (i) {
+		void *block = FREE_HEAD(kuai, i);
+		if (block) {
 			FREE_HEAD(kuai, i) = FREE_NEXT(block);
+			return block;
 		}
-		break;
+		return NULL;
 	}
-	return block;
+	struct lafblock *lafb = lafblock_remove(PMAP_ROOT(kuai), size);
+	if (lafb && lafb->size >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
+		struct lafblock *next = (struct lafblock *) (BPTR(lafb) + size);
+		block_split(lafb->owner, next);
+		next->owner = lafb->owner;
+		next->size = lafb->size - size;
+		lafblock_insert(PMAP_ROOT(kuai), next);
+	}
+	return lafb;
 }
-
 
 void kuai_init(struct kuai *kuai)
 {
@@ -478,8 +466,12 @@ void kuai_free(struct kuai *kuai, void *block)
 		return;
 	int size = block_size(slab, block);
 	int i = free_index(size);
-	FREE_NEXT(block) = FREE_HEAD(kuai, i);
-	FREE_HEAD(kuai, i) = block;
-	if (i == 0)
-		OWNERSLAB(block) = slab;
+	if (i) {
+		FREE_NEXT(block) = FREE_HEAD(kuai, i);
+		FREE_HEAD(kuai, i) = block;
+	} else {
+		PMAP_LAFB(block)->size = size;
+		PMAP_LAFB(block)->owner = slab;
+		lafblock_insert(PMAP_ROOT(kuai), block);
+	}
 }
