@@ -7,7 +7,7 @@
 #define LWM_UCS2_H
 #include <stddef.h>
 
-#if defined(_MSC_VER) && !defined(__llvm__)
+#if (defined(_MSC_VER) && !defined(__llvm__)) || (__SIZEOF_WCHAR_T__ == 2) || (__WCHAR_MAX__ == 0xFFFF)
 	#include <wchar.h>
 	typedef wchar_t       uchar;
 	#define USTR(str)      L##str

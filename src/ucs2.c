@@ -224,15 +224,15 @@ long ucstol(const uchar *ucs, uchar **end, int base)
 			ch = *ptr++;
 		}
 	}
-	// skip suffix
-	if (NOT_EMPTY() && isalpha(ch)) {
-		ch = lower(ch);
-		if (ch == 'u') {
-			ptr += 1 + (lower(ptr[0]) == 'l');
-		} else if (ch == 'l') {
-			ptr++;
-		}
-	}
+	// Following MSVC's wcstol, which does not process the suffix.
+	// if (NOT_EMPTY() && isalpha(ch)) {
+	// 	ch = lower(ch);
+	// 	if (ch == 'u') {
+	// 		ptr += 1 + (lower(ptr[0]) == 'l');
+	// 	} else if (ch == 'l') {
+	// 		ptr++;
+	// 	}
+	// }
 exit:
 	if (end)
 		*end = (uchar *)(NOT_EMPTY() ? ptr - 1 : ucs);
