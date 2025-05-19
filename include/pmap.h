@@ -32,6 +32,9 @@
 #define LWM_PMAP_H
 #include <stddef.h>
 
+/*
+ * The capacity is about "2 ^ (height * 0.75)", (inaccurate)
+ */
 struct pmnode {
 	struct pmnode *left;
 	struct pmnode *right;
@@ -59,16 +62,15 @@ static int inline pmap_height(struct pmnode *node)
 #   endif
 #endif
 
-
 #ifndef VLADecl
 #   ifdef _MSC_VER
-#       define VLADecl(type, name, len) type *name = _alloca(sizeof(type) * (len))
+#       define VLADecl(type, name, len) type __##name[16]; type *name = len <= 16 ? __##name : _alloca(sizeof(type) * (len))
 #else
 #       define VLADecl(type, name, len) type name[len]
 #   endif
 #endif
 
-// three-level pointer : `struct pmnode **name[len + 1]`
-#define pmap_stacks_decl(name, len) VLADecl(struct pmnode **, name, len + 1)
+// three-level pointer : `struct pmnode **name[len]`
+#define pmap_stacks_decl(name, len) VLADecl(struct pmnode **, name, len)
 
 #endif

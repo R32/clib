@@ -109,7 +109,7 @@ static void data_iter_forward(struct pmnode *root) {
 		return;
 
 	int index = -1;
-	VLADecl(struct pmnode*, pmnode_stacks, pmap_height(root) + 1);
+	VLADecl(struct pmnode*, pmnode_stacks, pmap_height(root));
 	// entry_first(leftmost)
 	while (node->left) {
 		pmnode_stacks[++index] = node;
