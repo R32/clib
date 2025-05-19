@@ -445,20 +445,18 @@ void *kuai_alloc(struct kuai *kuai, int size)
 
 void kuai_free(struct kuai *kuai, void *block)
 {
-	struct slab *prev = NULL;
-	struct slab *slab = slab_head(kuai);
-	while (slab) {
+	struct slab **prev = (struct slab **)&slab_head(kuai);
+	struct slab *slab = NULL;
+	while (slab = *prev) {
 		if (BPTR(block) > BPTR(slab) && BPTR(block) < BPTR(slab) + slab_pos(slab))
 			break;
-		prev = slab;
-		slab = slab_next(slab);
+		prev = &slab_next(slab);
 	}
 	if (!slab)
 		return;
 	// external alloc
 	if (!slab_isinner(slab)) {
-		if (prev)
-			slab_next(prev) = slab_next(slab);
+		*prev = slab_next(slab);
 		free(slab);
 		return;
 	}
