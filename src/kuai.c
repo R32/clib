@@ -24,7 +24,7 @@
 #define BIT_SHIFT_MAX    (BIT_CNT_MAX - 1)
 
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MSVCRT__)
 #   include <intrin.h>
 #   if IS_64
 #       define bit_scan_forward _BitScanForward64
@@ -33,7 +33,7 @@
 #   endif
 static unsigned int __inline TRAILING_ZEROS(size_t x)
 {
-	unsigned int msb;
+	unsigned long msb;
 	if(bit_scan_forward(&msb, x))
 		return msb;
 	return BIT_CNT_MAX;
@@ -82,7 +82,7 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 #define BPTR(p)                   ((unsigned char *)(p))
 
 #define COMMIT_BASE               (8 * 1024)
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MSVCRT__)
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
 #   define VALLOC(size)            VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE)
@@ -120,12 +120,10 @@ struct slab {
 #define slab_committed(p) ((p)->meta.stat.committed)
 #define slab_isinner(p)   ((p)->meta.stat.committed)
 
-// Only for a block with size >= (KFREELIST_MAX * BLK_BASE)
-#define OWNERSLAB(m)      (*((void **)(m) + 1))
 #define FREE_NEXT(m)      (*(void **)(m))
 #define FREE_HEAD(k, i)   ((k)->freelist[i])
 
-// memset(slab, 1024, 0). reduce the dependency on <stdlib.h>
+// memset(slab, 1024, 0)
 static inline void slab_metazero(struct slab *slab)
 {
 	int i = 0;
@@ -175,7 +173,7 @@ static int block_size(struct slab *slab, void *block)
 	// count bits starting at the next bit point
 	if (begin < BIT_SHIFT_MAX) {
 		bits >>= begin + 1;
-	} else if (index < BMPLONG_SIZE) { // BMPLONG_SIZE is safe
+	} else if (index < BMPLONG_SIZE) {
 		bits = slab->meta.bitmap[index++];
 		begin = -1; // prev begin
 	} else {
@@ -220,7 +218,7 @@ static void *block_add(struct slab *slab, int size)
 	// Just simply mark the next point as a separator.
 	int next = offset + size;
 	slab_pos(slab) = next;
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MSVCRT__)
 	int committed = slab_committed(slab);
 	if (next >= committed) {
 		if (SLAB_SIZE > committed) {
