@@ -52,7 +52,7 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 #undef trailing_zeros
 #endif
 
-// Fallback threshold
+// Fallback threshold, If alloc size > this threshold, use external allocator
 #define EXTERN_SIZE               (8 * 1024)
 
 // The basic block with 8 BYTES.
@@ -70,13 +70,21 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 // bit position in [0-31] or [0-63]
 #define BMPLONG_BIT_POSITION(p)   (((p) % BMPLONG_CBS) / BLK_BASE)
 
+// The total memory size of a slab (in bytes)
 #define SLAB_SIZE                 (64 * 1024)
-#define BMPBYTE_SIZE              (SLAB_SIZE / BMPBYTE_CBS)
-#define BMPLONG_SIZE              (BMPBYTE_SIZE / sizeof(size_t))
-#define META_SIZE                 (BMPBYTE_SIZE - (SLAB_SIZE - BMPBYTE_SIZE) / BMPBYTE_CBS)
 
-#if (META_SIZE < 16)
-#   error TODO(BLK_BASE & SLAB_SIZE)
+// The bitmap size in bytes required to track a slab
+#define BMPBYTE_SIZE              (SLAB_SIZE / BMPBYTE_CBS)
+
+// The bitmap size in size_t units
+#define BMPLONG_SIZE              (BMPBYTE_SIZE / sizeof(size_t))
+
+// The position start (in bytes)
+#define POSITION_START            (BMPBYTE_SIZE / BMPBYTE_CBS)
+#define STAT_SIZE                 (POSITION_START)
+
+#if (STAT_SIZE < 16)
+#   error STAT_SIZE needs to be at least 16 bytes.
 #endif
 
 #define BPTR(p)                   ((unsigned char *)(p))
@@ -142,7 +150,7 @@ static inline void slab_init(struct slab *slab)
 	//
 	slab_next(slab) = NULL;
 	// mark the first block for block_add
-	slab->meta.bitmap[META_SIZE / sizeof(size_t)] = 1;
+	slab->meta.bitmap[POSITION_START / sizeof(size_t)] = 1;
 }
 
 static inline void slab_add(struct kuai *kuai, struct slab *slab)
@@ -406,7 +414,7 @@ void *kuai_alloc(struct kuai *kuai, int size)
 {
 	// if size > 8KB
 	if (size > EXTERN_SIZE) {
-		size += META_SIZE;
+		size += STAT_SIZE;
 		struct slab *slab = malloc(size);
 		if (!slab)
 			return NULL;
@@ -414,11 +422,11 @@ void *kuai_alloc(struct kuai *kuai, int size)
 		slab_isinner(slab) = 0;
 		slab_next(slab) = NULL;
 		// Add to tail
-		struct slab **prev = (struct slab **)&slab_head(kuai);
+		struct slab **prev = &slab_head(kuai);
 		while (*prev)
 			prev = &slab_next(*prev);
 		*prev = slab;
-		return BPTR(slab) + META_SIZE;
+		return BPTR(slab) + STAT_SIZE;
 	}
 	size = size ? ALIGN_UP(size, BLK_BASE) : BLK_BASE;
 	void *block = free_pickup(kuai, size);
@@ -443,7 +451,7 @@ void *kuai_alloc(struct kuai *kuai, int size)
 
 void kuai_free(struct kuai *kuai, void *block)
 {
-	struct slab **prev = (struct slab **)&slab_head(kuai);
+	struct slab **prev = &slab_head(kuai);
 	struct slab *slab = NULL;
 	while (slab = *prev) {
 		if (BPTR(block) > BPTR(slab) && BPTR(block) < BPTR(slab) + slab_pos(slab))

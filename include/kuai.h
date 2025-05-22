@@ -29,10 +29,11 @@
  *         +- ...
  *         +- [MAX - 1] : list((MAX - 1) * BLK_BASE)
  *
- * TODO : A better way to handle >8KB blocks.
+ * TODO : A better way to handle > 8KB blocks.
  */
+struct slab;
 struct kuai {
-	void *slab;
+	struct slab *slab;
 	void *freelist[KFREELIST_MAX];
 };
 

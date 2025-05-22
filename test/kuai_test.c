@@ -155,7 +155,7 @@ static void kuai_test_inner(int log)
 	// test without kuai_init
 	{
 	void *external = kt_alloc(EXTERN_SIZE + BLK_BASE); // external allocating
-	assert(slab_size(&kuai, external) == EXTERN_SIZE + BLK_BASE + META_SIZE);
+	assert(slab_size(&kuai, external) == EXTERN_SIZE + BLK_BASE + STAT_SIZE);
 	struct slab *slab = slab_head(&kuai);
 	assert(slab && slab_isinner(slab) == 0);
 	kuai_reset(&kuai);
@@ -178,9 +178,9 @@ static void kuai_test_inner(int log)
 				block[j++] = 0xCCCCCCCCCCCCCCCC;
 			}
 		}
-		assert(slab_next((struct slab *)kuai.slab) == NULL);
-		assert(slab_pos((struct slab *)kuai.slab) == BMPBYTE_SIZE + (count * size));
-		unsigned char *first = ((struct slab *)kuai.slab)->data;
+		assert(slab_next(kuai.slab) == NULL);
+		assert(slab_pos(kuai.slab) == BMPBYTE_SIZE + (count * size));
+		unsigned char *first = kuai.slab->data;
 		for (int i = 0; i < count; i++) {
 			uint64_t *block = (uint64_t *)(first + i * size);
 			assert(kt_validate(block));
@@ -194,8 +194,8 @@ static void kuai_test_inner(int log)
 		}
 		// reset
 		kuai_reset(&kuai);
-		assert(slab_pos((struct slab *)kuai.slab) = BMPBYTE_SIZE);
-		assert(slab_committed((struct slab *)kuai.slab) = COMMIT_BASE);
+		assert(slab_pos(kuai.slab) = BMPBYTE_SIZE);
+		assert(slab_committed(kuai.slab) = COMMIT_BASE);
 	}
 // rands
 #define RAND()        (rand() % (EXTERN_SIZE + 128))
@@ -211,7 +211,7 @@ static void kuai_test_inner(int log)
 			if (size <= EXTERN_SIZE) {
 				assert(kt_size(list[i]) == size);
 			} else {
-				assert(kt_size(list[i]) == size + META_SIZE);
+				assert(kt_size(list[i]) == size + STAT_SIZE);
 			}
 		}
 		shuffle((void **)list, COUNT);
@@ -227,7 +227,7 @@ static void kuai_test_inner(int log)
 		list[i] = kt_alloc(size);
 		int real = kt_size(list[i]);
 		if (size > EXTERN_SIZE) {
-			assert(real == size + META_SIZE);
+			assert(real == size + STAT_SIZE);
 			continue;
 		}
 		if (size < FL_MAXSIZE) {
@@ -248,7 +248,7 @@ static void kuai_test_inner(int log)
 		list[i] = kt_alloc(size);
 		int real = kt_size(list[i]);
 		if (size > EXTERN_SIZE) {
-			assert(real == size + META_SIZE);
+			assert(real == size + STAT_SIZE);
 			continue;
 		}
 		if (size < FL_MAXSIZE) {
