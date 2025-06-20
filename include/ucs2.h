@@ -70,4 +70,12 @@ int dtoua(double value, uchar *out, int precision, int fixed);
  */
 int ucs_to_utf8(unsigned char *dst, const uchar *src, int max);
 int utf8_to_ucs(uchar *dst, const unsigned char *src, int max);
+
+/*
+ * Simple path matching with wildcards:
+ *   '?' - matches any single character
+ *   '*' - matches any sequence of characters
+ */
+ucs_path_match(const uchar *path, const uchar *wildcard);
+
 #endif

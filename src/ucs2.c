@@ -246,8 +246,8 @@ static inline void ureverse(uchar *i, uchar *j)
 {
 	uchar t;
 	while (i < j) {
-		 t   = *j; 
-		*j-- = *i; 
+		 t   = *j;
+		*j-- = *i;
 		*i++ =  t;
 	}
 }
@@ -257,7 +257,7 @@ int itoua(int value, uchar *out)
 	unsigned int num = (unsigned int)(value < 0 ? -value : value);
 	uchar *ptr = out;
 	do { *ptr++ = (uchar)(num % 10 + '0'); } while (num /= 10);
-	if (value < 0) 
+	if (value < 0)
 		*ptr++ = '-';
 	*ptr = 0;
 	ureverse(out, ptr - 1);
@@ -438,7 +438,7 @@ exit:
 
 /*
  * Converts a double to a uchar string.
- * 
+ *
  * @param value
  * @param out : Pointer to a buffer large enough to hold the result.(including NULL terminator)
  * @param precision : If -1, defaults to 16. If 'fixed' is set, then this value will be ignored.
@@ -464,7 +464,7 @@ int dtoua(double value, uchar *out, int precision, int fixed)
 		*ptr++ = 'f';
 		goto exit;
 	}
-	unsigned long long intpart = 0; 
+	unsigned long long intpart = 0;
 	int len = 0;
 	if (value >= 1.0) {
 		intpart = (unsigned long long)value;
@@ -472,7 +472,7 @@ int dtoua(double value, uchar *out, int precision, int fixed)
 		ptr += len;
 	} else {
 		*ptr++ = '0';
-		if (fixed <= 0) { 
+		if (fixed <= 0) {
 			// The first non-zero digit for "precision"
 			double x = 0.1;
 			while (value < x) {
@@ -517,9 +517,9 @@ exit:
 
 /*
  * Convert uchar string to utf-8.
- * 
+ *
  * @param max : Maximum number of bytes characters to write to 'dst'
- * 
+ *
  * @return : The number of bytes written to 'dst' (not including NULL terminator)
  */
 int ucs_to_utf8(unsigned char *dst, const uchar *src, int max)
@@ -570,9 +570,9 @@ int ucs_to_utf8(unsigned char *dst, const uchar *src, int max)
 
 /*
  * Convert utf-8 to uchar string.
- * 
+ *
  * @max : Maximum number of **uchar(wide)** characters to write to 'dst'.
- * 
+ *
  * @return : The number of **uchar(wide)** characters written to 'dst' (not including NULL terminator).
  */
 int utf8_to_ucs(uchar *dst, const unsigned char *src, int max)
@@ -631,4 +631,32 @@ int utf8_to_ucs(uchar *dst, const unsigned char *src, int max)
 	if (acc < max)
 		dst[acc] = 0;
 	return acc;
+}
+
+/*
+ * TODO :
+ * ucs_path_match("dir/a/b/c/d/file.txt", "dir/**\/*.txt") == 0 (BUGBUG : Expected 1 but got 0)
+ * ucs_path_match("dir/a/b/c/d/file.txt", "dir/**\/d/*.txt") == 1
+ */
+int ucs_path_match(const uchar *path, const uchar *wildcard)
+{
+	const uchar *star = NULL;
+	while (*path) {
+		if (*wildcard == *path || *wildcard == '?') {
+			path++;
+			wildcard++;
+		} else if (*wildcard == '*') {
+			while (*++wildcard == '*');
+			star = wildcard - 1;
+		} else if (star) {
+			if (isslash(*path))
+				return 0;
+			wildcard = star + 1;
+			path++;
+		} else {
+			return 0;
+		}
+	}
+	while (*wildcard == '*') wildcard++;
+	return *wildcard == '\0';
 }
