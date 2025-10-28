@@ -274,13 +274,13 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	int index = -1;
 	int previ = -1;
 	struct pmnode **slot = root;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
 		struct lafblock *curr = container_of(*slot, struct lafblock, node);
 		int cmp = size - curr->size;
 		if (cmp == 0)
 			break;
-		pmap_stacks[++index] = slot;
+		stacks[++index] = slot;
 		if (cmp < 0) {
 			previ = index;
 			slot = &(*slot)->left;
@@ -292,7 +292,7 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	if (victim == NULL) {
 		if (previ < 0)
 			return NULL;
-		slot = pmap_stacks[previ];
+		slot = stacks[previ];
 		victim = *slot;
 		index = previ - 1;
 	}
@@ -303,9 +303,9 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 		*slot = next;       // linking
 		return lafb;
 	}
-	pmap_merge(slot);
+	pmap_merge(slot, &stacks[index + 1]);
 	while (index >= 0) {
-		pmap_balance(pmap_stacks[index--], &index);
+		pmap_balance(stacks[index--], &index);
 	}
 	return lafb;
 }
@@ -313,11 +313,11 @@ static void lafblock_insert(struct pmnode **root, struct lafblock *lafb)
 {
 	int index = -1;
 	struct pmnode **slot = root;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
 		struct lafblock *curr = container_of(*slot, struct lafblock, node);
 		int cmp = lafb->size - curr->size;
-		pmap_stacks[++index] = slot;
+		stacks[++index] = slot;
 		if (cmp < 0) {
 			slot = &(*slot)->left;
 		} else if (cmp > 0) {
@@ -337,7 +337,7 @@ static void lafblock_insert(struct pmnode **root, struct lafblock *lafb)
 
 	// do balancing
 	while (index >= 0) {
-		pmap_balance(pmap_stacks[index--], &index);
+		pmap_balance(stacks[index--], &index);
 	}
 }
 

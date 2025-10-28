@@ -35,6 +35,10 @@
 /*
  * The capacity is about "2 ^ (height * 0.75)", (inaccurate)
  */
+#ifndef PMAP_STACK_HEIGHT
+#   define PMAP_STACK_HEIGHT 32
+#endif
+
 struct pmnode {
 	struct pmnode *left;
 	struct pmnode *right;
@@ -43,7 +47,7 @@ struct pmnode {
 
  int pmap_count(struct pmnode *root);
 void pmap_balance(struct pmnode **slot, int *breakout);
-void pmap_merge(struct pmnode **slot);
+void pmap_merge(struct pmnode **slot, struct pmnode ***stacks);
 
 static int inline pmap_height(struct pmnode *node)
 {
@@ -53,24 +57,13 @@ static int inline pmap_height(struct pmnode *node)
 
 #ifndef container_of
 #   if defined(_MSC_VER) || !defined(__llvm__) // unsafe in msvc
-#       define container_of(ptr, type, member)\
-        ((type *)((char *)ptr - offsetof(type, member)))
+#       define container_of(ptr, type, member) \
+            ((type *)((char *)ptr - offsetof(type, member)))
 #   else
-#   define container_of(ptr, type, member) ({\
-        const __typeof__(((type *)0)->member) * __mptr = (ptr);\
-        (type *)((char *)ptr - offsetof(type, member)); })
+#       define container_of(ptr, type, member) ({ \
+            const __typeof__(((type *)0)->member) * __mptr = (ptr); \
+            (type *)((char *)ptr - offsetof(type, member)); })
 #   endif
 #endif
-
-#ifndef VLADecl
-#   ifdef _MSC_VER
-#       define VLADecl(type, name, len) type __##name[16]; type *name = len <= 16 ? __##name : _alloca(sizeof(type) * (len))
-#else
-#       define VLADecl(type, name, len) type name[len]
-#   endif
-#endif
-
-// three-level pointer : `struct pmnode **name[len]`
-#define pmap_stacks_decl(name, len) VLADecl(struct pmnode **, name, len)
 
 #endif

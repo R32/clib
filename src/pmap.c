@@ -133,7 +133,7 @@ void pmap_balance(struct pmnode **slot, int *breakout)
 	}
 }
 
-void pmap_merge(struct pmnode **slot)
+void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 {
 	struct pmnode *left = (*slot)->left;
 	struct pmnode *right = (*slot)->right;
@@ -165,27 +165,26 @@ void pmap_merge(struct pmnode **slot)
 	 *    LMR
 	 */
 	int index = 0;
-	pmap_stacks_decl(pmap_stacks, (*slot)->height);
-	pmap_stacks[0] = slot;
+	stacks[0] = slot;
 	struct pmnode **anchor = &(*slot)->right;
 	while (*anchor) {
-		pmap_stacks[++index] = anchor;
+		stacks[++index] = anchor;
 		anchor = &(*anchor)->left;
 	}
 	// leftmost node
-	struct pmnode *node = *pmap_stacks[index];
+	struct pmnode *node = *stacks[index];
 
 	// leftmost_parent->left = leftmost->right; (remove_min_binding)
-	(*pmap_stacks[--index])->left = node->right;
+	(*stacks[--index])->left = node->right;
 
 	// copy (left, right) to node
 	*node = **slot;
 	// link the leftmost node to the slot
 	*slot = node;
 	// update `&slot->right` after linking. [0] => slot, [1] => &slot->right
-	pmap_stacks[1] = &node->right;
+	stacks[1] = &node->right;
 
 	while (index >= 0) {
-		pmap_balance(pmap_stacks[index--], &index);
+		pmap_balance(stacks[index--], &index);
 	}
 }

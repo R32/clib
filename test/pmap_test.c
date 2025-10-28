@@ -29,7 +29,7 @@ static struct data *data_remove(struct pmnode **root, int key)
 {
 	int index = -1;
 	struct pmnode **slot = root;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
 		// <------
 		struct data *curr = container_of(*slot, struct data, node);
@@ -37,7 +37,7 @@ static struct data *data_remove(struct pmnode **root, int key)
 		// <------
 		if (cmp == 0)
 			break;
-		pmap_stacks[++index] = slot;
+		stacks[++index] = slot;
 
 		if (cmp < 0) {
 			slot = &(*slot)->left;
@@ -48,9 +48,9 @@ static struct data *data_remove(struct pmnode **root, int key)
 	struct pmnode *victim = *slot;
 	if (victim == NULL)
 		return NULL;
-	pmap_merge(slot);
+	pmap_merge(slot, &stacks[index + 1]);
 	while (index >= 0) {
-		pmap_balance(pmap_stacks[index--], &index);
+		pmap_balance(stacks[index--], &index);
 	}
 	// <------
 	return container_of(victim, struct data, node);
@@ -61,13 +61,13 @@ static struct data *data_insert(struct pmnode **root, struct data *data)
 {
 	int index = -1;
 	struct pmnode **slot = root;
-	pmap_stacks_decl(pmap_stacks, pmap_height(*root));
+	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
 		// <------
 		struct data *curr = container_of(*slot, struct data, node);
 		int cmp = data->key - curr->key;
 		// <------
-		pmap_stacks[++index] = slot;
+		stacks[++index] = slot;
 		if (cmp < 0) {
 			slot = &(*slot)->left;
 		} else if (cmp > 0) {
@@ -84,7 +84,7 @@ static struct data *data_insert(struct pmnode **root, struct data *data)
 
 	// do balancing
 	while (index >= 0) {
-		pmap_balance(pmap_stacks[index--], &index);
+		pmap_balance(stacks[index--], &index);
 	}
 	return NULL;
 }
@@ -109,10 +109,10 @@ static void data_iter_forward(struct pmnode *root) {
 		return;
 
 	int index = -1;
-	VLADecl(struct pmnode*, pmnode_stacks, pmap_height(root));
+	struct pmnode *stacks[PMAP_STACK_HEIGHT];
 	// entry_first(leftmost)
 	while (node->left) {
-		pmnode_stacks[++index] = node;
+		stacks[++index] = node;
 		node = node->left;
 	}
 	// entry_next
@@ -125,14 +125,14 @@ static void data_iter_forward(struct pmnode *root) {
 		if (node->right) {
 			node = node->right;
 			while (node->left) {
-				pmnode_stacks[++index] = node;
+				stacks[++index] = node;
 				node = node->left;
 			}
 			continue;
 		}
 		if (index < 0)
 			break;
-		node = pmnode_stacks[index--];
+		node = stacks[index--];
 	}
 
 	// <------ reset test
