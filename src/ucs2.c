@@ -351,6 +351,8 @@ static int flt_carryup(uchar *begin, uchar *end)
 /*
  * Converts a float to a uchar string.
  *
+ * The uchar count of 'out' is roughly 20( 10(UINT32_MAX) + 1('.') + 8(fixed default) + 1('\0') )
+ *
  * @param value
  * @param out : Pointer to a buffer large enough to hold the result.(including NULL terminator)
  * @param precision : If -1, defaults to 8. If 'fixed' is set, then this value will be ignored.
@@ -438,6 +440,8 @@ exit:
 
 /*
  * Converts a double to a uchar string.
+ *
+ * The uchar count of 'out' is roughly 38( 20(UINT64_MAX) + 1('.') + 16(fixed default) + 1('\0') ).
  *
  * @param value
  * @param out : Pointer to a buffer large enough to hold the result.(including NULL terminator)
@@ -649,7 +653,7 @@ int ucs_path_match(const uchar *path, const uchar *wildcard)
 			while (*++wildcard == '*');
 			star = wildcard - 1;
 		} else if (star) {
-			if (isslash(*path))
+			if (*path == '/' || *path == '\\')
 				return 0;
 			wildcard = star + 1;
 			path++;
