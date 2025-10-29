@@ -31,8 +31,9 @@ static struct data *data_remove(struct pmnode **root, int key)
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
+		struct pmnode *pnode = *slot;
 		// <------
-		struct data *curr = container_of(*slot, struct data, node);
+		struct data *curr = container_of(pnode, struct data, node);
 		int cmp = key - curr->key;
 		// <------
 		if (cmp == 0)
@@ -40,9 +41,9 @@ static struct data *data_remove(struct pmnode **root, int key)
 		stacks[++index] = slot;
 
 		if (cmp < 0) {
-			slot = &(*slot)->left;
+			slot = &pnode->left;
 		} else {
-			slot = &(*slot)->right;
+			slot = &pnode->right;
 		}
 	}
 	struct pmnode *victim = *slot;
@@ -63,21 +64,23 @@ static struct data *data_insert(struct pmnode **root, struct data *data)
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
+		struct pmnode *pnode = *slot;
 		// <------
-		struct data *curr = container_of(*slot, struct data, node);
+		struct data *curr = container_of(pnode, struct data, node);
 		int cmp = data->key - curr->key;
 		// <------
 		stacks[++index] = slot;
 		if (cmp < 0) {
-			slot = &(*slot)->left;
+			slot = &pnode->left;
 		} else if (cmp > 0) {
-			slot = &(*slot)->right;
+			slot = &pnode->right;
 		} else {
 			return curr; // Fails if already exists
 		}
 	}
 	// init new node
-	data->node = (struct pmnode){.left = NULL, .right = NULL, .height = 1};
+	data->node.left = data->node.right = NULL;
+	data->node.height = 1;
 
 	// link node to the NULL place.
 	*slot = &data->node;
@@ -135,7 +138,7 @@ static void data_iter_forward(struct pmnode *root) {
 		node = stacks[index--];
 	}
 
-	// <------ reset test
+	// <------ for test
 	prev = -1;
 	// <------
 }
@@ -187,8 +190,7 @@ static void test_inner(struct data *pdata, int logout)
 		struct data *data = &pdata[i];
 		struct data *find = data_search(root, data->key);
 		assert(data == find);
-		if (i < 1024)
-			assert(pmap_real_height(&data->node) == data->node.height);
+		assert(pmap_real_height(&data->node) == data->node.height);
 	}
 	t = clock() - t;
 	if (logout) printf("  Finding count : %d, time : %.6f\n", SIZE, ((double)t) / CLOCKS_PER_SEC);
@@ -196,6 +198,7 @@ static void test_inner(struct data *pdata, int logout)
 	// Removing
 	t = clock();
 	for (int i = 0; i < SIZE; ++i) {
+		assert(pmap_real_height(&pdata[i].node) == pdata[i].node.height);
 		struct data *data = data_remove(&root, pdata[i].key);
 		assert(data == &pdata[i]);
 	}

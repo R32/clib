@@ -33,7 +33,7 @@
 #include <stddef.h>
 
 /*
- * The capacity is about "2 ^ (height * 0.75)", (inaccurate)
+ * The capacity is about "2 ^ (height * 0.75)"(inaccurate)
  */
 #ifndef PMAP_STACK_HEIGHT
 #   define PMAP_STACK_HEIGHT 32
@@ -43,6 +43,7 @@ struct pmnode {
 	struct pmnode *left;
 	struct pmnode *right;
 	int height;
+	int aux; // unused align field, available for storing arbitrary values.
 };
 
  int pmap_count(struct pmnode *root);

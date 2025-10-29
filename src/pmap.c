@@ -135,8 +135,9 @@ void pmap_balance(struct pmnode **slot, int *breakout)
 
 void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 {
-	struct pmnode *left = (*slot)->left;
-	struct pmnode *right = (*slot)->right;
+	struct pmnode *vic = *slot; // a node is being removed
+	struct pmnode *left = vic->left;
+	struct pmnode *right = vic->right;
 	if (left == NULL) {
 		*slot = right;
 		return;
@@ -145,7 +146,7 @@ void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 		return;
 	}
 
-	/*    N             R
+	/*    V             R
 	 *  L   R   ->    L   RR
 	 *   (NULL  RR)
 	 */
@@ -157,7 +158,7 @@ void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 	}
 
 	/*
-	 *      N                  LM
+	 *      V                  LM
 	 *   L     R            L      R
 	 *       RL  RR    ->       RL   RR
 	 *    (RLL -)            (RLL -)
@@ -166,7 +167,7 @@ void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 	 */
 	int index = 0;
 	stacks[0] = slot;
-	struct pmnode **anchor = &(*slot)->right;
+	struct pmnode **anchor = &vic->right;
 	while (*anchor) {
 		stacks[++index] = anchor;
 		anchor = &(*anchor)->left;
@@ -177,8 +178,11 @@ void pmap_merge(struct pmnode **slot, struct pmnode ***stacks)
 	// leftmost_parent->left = leftmost->right; (remove_min_binding)
 	(*stacks[--index])->left = node->right;
 
-	// copy (left, right) to node
-	*node = **slot;
+	// copy (.left, .right, .height) but avoid .aux
+	node->left = left;
+	node->right = right;
+	node->height = vic->height;
+
 	// link the leftmost node to the slot
 	*slot = node;
 	// update `&slot->right` after linking. [0] => slot, [1] => &slot->right

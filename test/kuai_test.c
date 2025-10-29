@@ -95,7 +95,7 @@ static int pmap_real_height(struct pmnode *node)
 	int right = pmap_real_height(node->right);
 	return 1 + (left >= right ? left : right);
 }
-
+#define LAFB_SIZE(m)   ((m)->node.aux)
 static void kuai_with_pmap()
 {
 	struct pmnode *root = NULL;
@@ -105,8 +105,7 @@ static void kuai_with_pmap()
 	#define DIV   8
 	struct lafblock lafs[CNT];
 	for (int i = 0; i < CNT; i++) {
-		lafs[i].size = (i % DIV) * BLK_BASE;
-		lafblock_insert(&root, &lafs[i]);
+		lafblock_insert(&root, &lafs[i], (i % DIV) * BLK_BASE);
 	}
 	assert(pmap_count(root) == DIV);
 	// final group
@@ -115,7 +114,7 @@ static void kuai_with_pmap()
 		struct lafblock *ptr = &lafs[i];
 		while (ptr) {
 			count++;
-			ptr = ptr->next;
+			ptr = ptr->next ? container_of(ptr->next, struct lafblock, node) : NULL;
 		}
 		assert(count == CNT / DIV);
 	}
@@ -123,12 +122,12 @@ static void kuai_with_pmap()
 	for (int i = 0; i < CNT / 2; i++) {
 		int size = (i % DIV) * BLK_BASE;
 		struct lafblock *blk = lafblock_remove(&root, size); // Exact size
-		assert(blk && blk->size == size);
+		assert(blk && LAFB_SIZE(blk) == size);
 	}
 	for (int i = CNT / 2; i < CNT - DIV; i++) {
 		int size = (i % DIV) * BLK_BASE;
 		struct lafblock *blk = lafblock_remove(&root, size - BLK_BASE / 2); // Approximate size
-		assert(blk && blk->size == size);
+		assert(blk && LAFB_SIZE(blk) == size);
 	}
 	// first group
 	for (int i = 0; i < DIV; i++) {
@@ -141,7 +140,7 @@ static void kuai_with_pmap()
 	for (int i = CNT - DIV; i < CNT; i++) {
 		int size = (i % DIV) * BLK_BASE;
 		struct lafblock *blk = lafblock_remove(&root, size);
-		assert(blk && blk->size == size);
+		assert(blk && LAFB_SIZE(blk) == size);
 	}
 	assert(root == NULL);
 }

@@ -259,15 +259,14 @@ static inline int free_index(unsigned int size)
  */
 struct lafblock {
 	struct pmnode node;
-	struct lafblock *next;
-	struct slab *owner;
-	int size;
+	struct pmnode *next;
 };
-#if (KFREELIST_MAX < 6)
+#if (KFREELIST_MAX < 5)
 #   error KFREELIST_MAX
 #endif
 #define PMAP_LAFB(m)   ((struct lafblock *)(m))
 #define PMAP_ROOT(k)   ((struct pmnode **)&(k)->freelist[0])
+#define LAFB_SIZE(m)   ((m)->node.aux)
 
 static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 {
@@ -276,16 +275,16 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
-		struct lafblock *curr = container_of(*slot, struct lafblock, node);
-		int cmp = size - curr->size;
+		struct pmnode *pnode = *slot;
+		int cmp = size - pnode->aux;
 		if (cmp == 0)
 			break;
 		stacks[++index] = slot;
 		if (cmp < 0) {
 			previ = index;
-			slot = &(*slot)->left;
+			slot = &pnode->left;
 		} else {
-			slot = &(*slot)->right;
+			slot = &pnode->right;
 		}
 	}
 	struct pmnode *victim = *slot;
@@ -298,8 +297,8 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	}
 	struct lafblock *lafb = container_of(victim, struct lafblock, node);
 	if (lafb->next) {
-		struct pmnode *next = &lafb->next->node;
-		*next = lafb->node; // copy datas
+		struct pmnode *next = lafb->next;
+		*next = lafb->node; // copy metadata
 		*slot = next;       // linking
 		return lafb;
 	}
@@ -309,29 +308,30 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	}
 	return lafb;
 }
-static void lafblock_insert(struct pmnode **root, struct lafblock *lafb)
+static void lafblock_insert(struct pmnode **root, struct lafblock *lafb, int size)
 {
 	int index = -1;
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
-		struct lafblock *curr = container_of(*slot, struct lafblock, node);
-		int cmp = lafb->size - curr->size;
+		struct pmnode *pnode = *slot;
+		int cmp = size - pnode->aux;
 		stacks[++index] = slot;
 		if (cmp < 0) {
-			slot = &(*slot)->left;
+			slot = &pnode->left;
 		} else if (cmp > 0) {
-			slot = &(*slot)->right;
+			slot = &pnode->right;
 		} else {
-			lafb->node = curr->node;
-			lafb->next = curr;
+			lafb->node = *pnode; // copy metadata
+			lafb->next = pnode;
 			*slot = &lafb->node; // linking
 			return;
 		}
 	}
 	// init for new one
-	lafb->node = (struct pmnode){.left = NULL, .right = NULL, .height = 1};
+	lafb->node = (struct pmnode){ .left = NULL, .right = NULL, .height = 1, .aux = size };
 	lafb->next = NULL;
+
 	// link node to the NULL place.
 	*slot = &lafb->node;
 
@@ -353,12 +353,18 @@ static void *free_pickup(struct kuai *kuai, int size)
 		return NULL;
 	}
 	struct lafblock *lafb = lafblock_remove(PMAP_ROOT(kuai), size);
-	if (lafb && lafb->size >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
+	if (lafb && LAFB_SIZE(lafb) >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
+		// linear search the owner
+		struct slab **prev = &slab_head(kuai);
+		struct slab *slab = NULL;
+		while (slab = *prev) {
+			if (BPTR(lafb) > BPTR(slab) && BPTR(lafb) < BPTR(slab) + SLAB_SIZE)
+				break;
+			prev = &slab_next(slab);
+		}
 		struct lafblock *next = (struct lafblock *) (BPTR(lafb) + size);
-		block_split(lafb->owner, next);
-		next->owner = lafb->owner;
-		next->size = lafb->size - size;
-		lafblock_insert(PMAP_ROOT(kuai), next);
+		block_split(slab, next);
+		lafblock_insert(PMAP_ROOT(kuai), next, LAFB_SIZE(lafb) - size);
 	}
 	return lafb;
 }
@@ -474,8 +480,6 @@ void kuai_free(struct kuai *kuai, void *block)
 		FREE_NEXT(block) = FREE_HEAD(kuai, i);
 		FREE_HEAD(kuai, i) = block;
 	} else {
-		PMAP_LAFB(block)->size = size;
-		PMAP_LAFB(block)->owner = slab;
-		lafblock_insert(PMAP_ROOT(kuai), block);
+		lafblock_insert(PMAP_ROOT(kuai), block, size);
 	}
 }
