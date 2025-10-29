@@ -59,7 +59,7 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 #define BLK_BASE                  (8)
 
 // The count of bytes managed by a byte, Using 1 bit to represent BLK_BASE bytes.
-#define BMPBYTE_CBS               (BLK_BASE * 8)
+#define BMPBYTE_CBS               (BLK_BASE * CHAR_BIT)
 
 // The count of bytes managed by a size_t.
 #define BMPLONG_CBS               (BMPBYTE_CBS * sizeof(size_t))
@@ -348,9 +348,8 @@ static void *free_pickup(struct kuai *kuai, int size)
 		void *block = FREE_HEAD(kuai, i);
 		if (block) {
 			FREE_HEAD(kuai, i) = FREE_NEXT(block);
-			return block;
 		}
-		return NULL;
+		return block;
 	}
 	struct lafblock *lafb = lafblock_remove(PMAP_ROOT(kuai), size);
 	if (lafb && LAFB_SIZE(lafb) >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
