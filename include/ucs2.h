@@ -76,6 +76,6 @@ int utf8_to_ucs(uchar *dst, const unsigned char *src, int max);
  *   '?' - matches any single character
  *   '*' - matches any sequence of characters
  */
-ucs_path_match(const uchar *path, const uchar *wildcard);
+int ucs_path_match(const uchar *path, const uchar *wildcard);
 
 #endif
