@@ -303,13 +303,13 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 		*slot = next;       // linking
 		return lafb;
 	}
-	pmap_merge(slot, &stacks[index + 1]);
-	while (index >= 0) {
-		pmap_balance(stacks[index--], &index);
-	}
+
+	// remove slot and do balance
+	pmap_remove(slot, stacks, index);
+
 	return lafb;
 }
-static void lafblock_insert(struct pmnode **root, struct lafblock *lafb, int size)
+static void lafblock_upsert(struct pmnode **root, struct lafblock *lafb, int size)
 {
 	int index = -1;
 	struct pmnode **slot = root;
@@ -336,10 +336,8 @@ static void lafblock_insert(struct pmnode **root, struct lafblock *lafb, int siz
 	// link node to the NULL place.
 	*slot = &lafb->node;
 
-	// do balancing
-	while (index >= 0) {
-		pmap_balance(stacks[index--], &index);
-	}
+	// do balance start at the slot's parent
+	pmap_balance(stacks, index);
 }
 
 static void *free_pickup(struct kuai *kuai, int size)
@@ -364,7 +362,7 @@ static void *free_pickup(struct kuai *kuai, int size)
 		}
 		struct lafblock *next = (struct lafblock *) (BPTR(lafb) + size);
 		block_split(slab, next);
-		lafblock_insert(PMAP_ROOT(kuai), next, LAFB_SIZE(lafb) - size);
+		lafblock_upsert(PMAP_ROOT(kuai), next, LAFB_SIZE(lafb) - size);
 	}
 	return lafb;
 }
@@ -480,6 +478,6 @@ void kuai_free(struct kuai *kuai, void *block)
 		FREE_NEXT(block) = FREE_HEAD(kuai, i);
 		FREE_HEAD(kuai, i) = block;
 	} else {
-		lafblock_insert(PMAP_ROOT(kuai), block, size);
+		lafblock_upsert(PMAP_ROOT(kuai), block, size);
 	}
 }

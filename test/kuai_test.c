@@ -105,7 +105,7 @@ static void kuai_with_pmap()
 	#define DIV   8
 	struct lafblock lafs[CNT];
 	for (int i = 0; i < CNT; i++) {
-		lafblock_insert(&root, &lafs[i], (i % DIV) * BLK_BASE);
+		lafblock_upsert(&root, &lafs[i], (i % DIV) * BLK_BASE);
 	}
 	assert(pmap_count(root) == DIV);
 	// final group

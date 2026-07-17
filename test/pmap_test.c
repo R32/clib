@@ -49,16 +49,15 @@ static struct data *data_remove(struct pmnode **root, int key)
 	struct pmnode *victim = *slot;
 	if (victim == NULL)
 		return NULL;
-	pmap_merge(slot, &stacks[index + 1]);
-	while (index >= 0) {
-		pmap_balance(stacks[index--], &index);
-	}
+	// remove slot and do balance
+	pmap_remove(slot, stacks, index);
+
 	// <------
 	return container_of(victim, struct data, node);
 	// <------
 }
 
-static struct data *data_insert(struct pmnode **root, struct data *data)
+static struct data *data_upsert(struct pmnode **root, struct data *data)
 {
 	int index = -1;
 	struct pmnode **slot = root;
@@ -85,10 +84,9 @@ static struct data *data_insert(struct pmnode **root, struct data *data)
 	// link node to the NULL place.
 	*slot = &data->node;
 
-	// do balancing
-	while (index >= 0) {
-		pmap_balance(stacks[index--], &index);
-	}
+	// do balance start at the slot's parent
+	pmap_balance(stacks, index);
+
 	return NULL;
 }
 
@@ -174,7 +172,7 @@ static void test_inner(struct data *pdata, int logout)
 	// inserting
 	clock_t t = clock();
 	for (int i = 0; i < SIZE; ++i) {
-		struct data *error = data_insert(&root, &pdata[i]);
+		struct data *error = data_upsert(&root, &pdata[i]);
 		assert(error == NULL);
 	}
 	t = clock() - t;

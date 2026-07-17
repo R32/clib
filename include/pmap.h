@@ -8,25 +8,6 @@
  *
  * Refer to `test/pmap_test.c` for samples.
  */
-/*
- * PMap - Polymorphic maps
- * Copyright (C) 1996-2003 Xavier Leroy, Nicolas Cannasse, Markus Mottl
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version,
- * with the special exception on linking described in file LICENSE.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
 #ifndef LWM_PMAP_H
 #define LWM_PMAP_H
@@ -47,14 +28,13 @@ struct pmnode {
 };
 
  int pmap_count(struct pmnode *root);
-void pmap_balance(struct pmnode **slot, int *breakout);
-void pmap_merge(struct pmnode **slot, struct pmnode ***stacks);
+void pmap_balance(struct pmnode ***stacks, int index);
+void pmap_remove(struct pmnode **slot, struct pmnode ***stacks, int index);
 
 static int inline pmap_height(struct pmnode *node)
 {
 	return node ? node->height : 0;
 }
-
 
 #ifndef container_of
 #   if defined(_MSC_VER) || !defined(__llvm__) // unsafe in msvc
