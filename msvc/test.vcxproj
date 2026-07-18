@@ -126,6 +126,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\test\buffer_test.c" />
+    <ClCompile Include="..\test\cset_test.c" />
     <ClCompile Include="..\test\kuai_test.c" />
     <ClCompile Include="..\test\pmap_test.c" />
     <ClCompile Include="..\test\test.c" />

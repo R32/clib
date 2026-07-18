@@ -19,8 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\adpcm.c" />
     <ClCompile Include="..\..\src\buffer.c" />
     <ClCompile Include="..\..\src\crlf_counter.c" />
+    <ClCompile Include="..\..\src\cset.c" />
     <ClCompile Include="..\..\src\kuai.c" />
     <ClCompile Include="..\..\src\mempool.c" />
     <ClCompile Include="..\..\src\pmap.c" />

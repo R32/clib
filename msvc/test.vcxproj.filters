@@ -30,5 +30,8 @@
     <ClCompile Include="..\test\ucs2_test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\test\cset_test.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

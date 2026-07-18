@@ -9,10 +9,11 @@ CFLAGS   :=
 LDFLAGS  :=
 INCLUDES := -I$(INC)
 OBJS     := buffer.o strbuf.o ucsbuf.o mempool.o crlf_counter.o \
-            rstream.o pmap.o kuai.o ucs2.o
+            rstream.o pmap.o kuai.o ucs2.o cset.o
 OBJS     := $(OBJS:%.o=$(OBJDIR)/%.o)
 
-TESTOBJS := test.o kuai_test.o ucs2_test.o pmap_test.o buffer_test.o
+TESTOBJS := test.o kuai_test.o ucs2_test.o pmap_test.o buffer_test.o\
+            cset_test.o
 TESTOBJS := $(TESTOBJS:%.o=$(OBJDIR)/%.o)
 
 
@@ -47,6 +48,7 @@ vpath %.c $(SRCDIR)
 
 # test
 $(OBJDIR)/test.o: test/test.c
+$(OBJDIR)/cset_test.o: test/cset_test.c $(OBJDIR)/cset.o
 $(OBJDIR)/pmap_test.o: test/pmap_test.c $(OBJDIR)/pmap.o
 $(OBJDIR)/ucs2_test.o: test/ucs2_test.c $(OBJDIR)/ucs2.o
 $(OBJDIR)/kuai_test.o: test/kuai_test.c $(OBJDIR)/kuai.o
@@ -59,6 +61,7 @@ $(OBJDIR)/%.o: test/%.c
 $(OBJDIR)/%.o: %.c
 	$(CC) $(INCLUDES) $(CFLAGS) -c $< -o $@
 
+$(OBJDIR)/cset.o: cset.c cset.h
 $(OBJDIR)/ucs2.o: ucs2.c ucs2.h
 $(OBJDIR)/pmap.o: pmap.c pmap.h
 $(OBJDIR)/kuai.o: kuai.c kuai.h
