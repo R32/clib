@@ -6,7 +6,7 @@
 #ifndef LWM_KUAI_H
 #define LWM_KUAI_H
 
-#define KFREELIST_MAX 9
+#define KFREELIST_MAX 6
 
 /*
  * 'kuai' - A lightweight first-class heaps allocator.

@@ -6,10 +6,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include "kuai.h"
 #include "pmap.h"
 
+// Round 'size' up to a multiple of 'alignment' (must be a power of two).
+// This macro ensures 'size' is evaluated **only once** to avoid some issue.
 #ifndef ALIGN_UP
 #   define ALIGN_UP(size, alignment) (((size) + (alignment) - 1) & ~((alignment) - 1))
 #endif
@@ -56,13 +59,15 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 // Fallback threshold, If alloc size > this threshold, use external allocator
 #define EXTERN_SIZE               (8 * 1024)
 
-// The basic block with 8 BYTES.
+// The bytes size of the basic block, the bitmap uses 1 bit to represent each BLK_BASE.
+#ifndef BLK_BASE
 #define BLK_BASE                  (8)
+#endif
 
-// The count of bytes managed by a byte, Using 1 bit to represent BLK_BASE bytes.
+// The number of bytes managed by one bitmap byte
 #define BMPBYTE_CBS               (BLK_BASE * CHAR_BIT)
 
-// The count of bytes managed by a size_t.
+// The number of bytes managed by one size_t-sized bitmap word
 #define BMPLONG_CBS               (BMPBYTE_CBS * sizeof(size_t))
 
 // byte to bitmap index
@@ -72,25 +77,31 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 #define BMPLONG_BIT_POSITION(p)   (((p) % BMPLONG_CBS) / BLK_BASE)
 
 // The total memory size of a slab (in bytes)
-#define SLAB_SIZE                 (64 * 1024)
+#if (BLK_BASE == 8)
+#   define SLAB_SIZE              (64 * 1024)
+#elif (BLK_BASE == 16)
+#   define SLAB_SIZE              (256 * 1024)
+#endif
 
-// The bitmap size in bytes required to track a slab
+// The bitmap size in bytes required to track
 #define BMPBYTE_SIZE              (SLAB_SIZE / BMPBYTE_CBS)
 
 // The bitmap size in size_t units
 #define BMPLONG_SIZE              (BMPBYTE_SIZE / sizeof(size_t))
 
-// The position start (in bytes)
-#define POSITION_START            (BMPBYTE_SIZE / BMPBYTE_CBS)
-#define STAT_SIZE                 (POSITION_START)
+// The position start offset
+#define POSITION_START            (BMPBYTE_SIZE)
 
-#if (STAT_SIZE < 16)
-#   error STAT_SIZE needs to be at least 16 bytes.
+// The minimum bytes size required for (struct slab.meta.stat)
+#define STAT_SIZE                 16
+
+#if ((POSITION_START / BMPBYTE_CBS) < STAT_SIZE)
+#   error "(POSITION_START / BMPBYTE_CBS) needs to be at least 16 bytes."
 #endif
 
 #define BPTR(p)                   ((unsigned char *)(p))
 
-#define COMMIT_BASE               (8 * 1024)
+#define COMMIT_PAGE               (8 * 1024)
 #if defined(_MSC_VER) || defined(__MSVCRT__)
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
@@ -100,14 +111,14 @@ static inline unsigned int TRAILING_ZEROS(size_t x)
 #   define VFREE(ptr)              VirtualFree(ptr, 0, MEM_RELEASE)
 #else
 #include <sys/mman.h>
-#   define VALLOC(size)            mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE |MAP_ANONYMOUS, -1, 0)
-#   define VCOMMIT(ptr, size)
-#   define VRESET(ptr, size)
+#   define VALLOC(size)            mmap(NULL, size, PROT_NONE             , MAP_PRIVATE | MAP_ANONYMOUS            , -1, 0)
+#   define VCOMMIT(ptr, size)      mmap(ptr , size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0)
+#   define VRESET(ptr, size)       madvise(ptr, size, MADV_DONTNEED)
 #   define VFREE(ptr)              munmap(ptr, SLAB_SIZE)
 #endif
 
 /*
- * Using 1 bit to represent 8 bytes(BLK_BASE)
+ * The bitmap uses 1 bit to represent each BLK_BASE.
  * 1 : indicates the start of the BLOCK
  * 0 : indicates the contiguous BLOCK
  */
@@ -132,26 +143,15 @@ struct slab {
 #define FREE_NEXT(m)      (*(void **)(m))
 #define FREE_HEAD(k, i)   ((k)->freelist[i])
 
-// memset(slab, 1024, 0)
-static inline void slab_metazero(struct slab *slab)
-{
-	int i = 0;
-	size_t *const bmp = slab->meta.bitmap;
-	while (i < BMPLONG_SIZE) {
-		bmp[i++] = 0;
-		bmp[i++] = 0;
-	}
-}
-
 static inline void slab_init(struct slab *slab)
 {
-	slab_committed(slab) = COMMIT_BASE;
+	slab_committed(slab) = COMMIT_PAGE;
 	// starting point
-	slab_pos(slab) = BMPBYTE_SIZE;
+	slab_pos(slab) = POSITION_START;
 	//
 	slab_next(slab) = NULL;
-	// mark the first block for block_add
-	slab->meta.bitmap[POSITION_START / sizeof(size_t)] = 1;
+	// mark the first block as valid for block_validate
+	slab->meta.bitmap[BMPLONG_INDEX(POSITION_START)] = 1;
 }
 
 static inline void slab_add(struct kuai *kuai, struct slab *slab)
@@ -165,7 +165,7 @@ static struct slab *slab_new()
 	if (!slab)
 		return NULL;
 	// incremental commit in MSVC
-	VCOMMIT(slab, COMMIT_BASE);
+	VCOMMIT(slab, COMMIT_PAGE);
 	slab_init(slab);
 	return slab;
 }
@@ -224,25 +224,18 @@ static void *block_add(struct slab *slab, int size)
 {
 	int offset = slab_pos(slab);
 	void *block = BPTR(slab) + offset;
-	// Just simply mark the next point as a separator.
-	int next = offset + size;
-	slab_pos(slab) = next;
-#if defined(_MSC_VER) || defined(__MSVCRT__)
 	int committed = slab_committed(slab);
-	if (next >= committed) {
-		if (SLAB_SIZE > committed) {
-			int diff = next - committed;
-			int extra = diff ? ALIGN_UP(diff, COMMIT_BASE) : COMMIT_BASE;
-			VCOMMIT(BPTR(slab) + committed, extra);
-			slab_committed(slab) = committed + extra;
-		}
-		if (next >= SLAB_SIZE)
-			return next == SLAB_SIZE ? block : NULL;
+	int next = offset + size;
+	slab_pos(slab) = next; // assign before return
+	int grow = next - committed;
+	if (grow >= 0) {
+		if (next == SLAB_SIZE)
+			return block;
+		int page = grow ? ALIGN_UP(grow, COMMIT_PAGE) : COMMIT_PAGE;
+		VCOMMIT(BPTR(slab) + committed, page);
+		slab_committed(slab) = committed + page;
 	}
-#else
-	if (next >= SLAB_SIZE)
-		return next == SLAB_SIZE ? block : NULL;
-#endif
+	// Just simply mark the next point as a separator.
 	int index = BMPLONG_INDEX(next);
 	int begin = BMPLONG_BIT_POSITION(next);
 	slab->meta.bitmap[index] |= (size_t)1 << begin;
@@ -256,33 +249,34 @@ static inline int free_index(unsigned int size)
 }
 
 /*
- * large free block, for size >= KFREELIST_MAX, sizeof == 48 bytes
+ * freed blocks of varying sizes, for size >= KFREELIST_MAX
  */
-struct lafblock {
+struct vblock {
 	struct pmnode node;
 	struct pmnode *next;
+	int size;
 };
+// sizeof(struct vblock) / BLK_SIZE ==> 40 / 8
 #if (KFREELIST_MAX < 5)
-#   error KFREELIST_MAX
+#   error "The value of KFREELIST_MAX is below 5"
 #endif
-#define PMAP_LAFB(m)   ((struct lafblock *)(m))
-#define PMAP_ROOT(k)   ((struct pmnode **)&(k)->freelist[0])
-#define LAFB_SIZE(m)   ((m)->node.aux)
+#define PMAP_ROOT(k)     ((struct pmnode **)&(k)->freelist[0])
+#define VBLOCK_SIZE(b)   ((b)->size)
 
-static struct lafblock *lafblock_remove(struct pmnode **root, int size)
+static struct vblock *vblock_remove(struct pmnode **root, int size)
 {
 	int index = -1;
-	int previ = -1;
+	int lower = -1; // lower bound
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
 	while (*slot) {
 		struct pmnode *pnode = *slot;
-		int cmp = size - pnode->aux;
+		int cmp = size - VBLOCK_SIZE(container_of(pnode, struct vblock, node));
 		if (cmp == 0)
 			break;
 		stacks[++index] = slot;
 		if (cmp < 0) {
-			previ = index;
+			lower = index;
 			slot = &pnode->left;
 		} else {
 			slot = &pnode->right;
@@ -290,51 +284,51 @@ static struct lafblock *lafblock_remove(struct pmnode **root, int size)
 	}
 	struct pmnode *victim = *slot;
 	if (victim == NULL) {
-		if (previ < 0)
+		if (lower < 0)
 			return NULL;
-		slot = stacks[previ];
+		slot = stacks[lower];
 		victim = *slot;
-		index = previ - 1;
+		index = lower - 1;
 	}
-	struct lafblock *lafb = container_of(victim, struct lafblock, node);
-	if (lafb->next) {
-		struct pmnode *next = lafb->next;
-		*next = lafb->node; // copy metadata
-		*slot = next;       // linking
-		return lafb;
+	struct vblock *vblock = container_of(victim, struct vblock, node);
+	if (vblock->next) {
+		struct pmnode *next = vblock->next;
+		*next = vblock->node; // copy metadata
+		*slot = next;         // linking
+		return vblock;
 	}
-
 	// remove slot and do balance
 	pmap_remove(slot, stacks, index);
 
-	return lafb;
+	return vblock;
 }
-static void lafblock_upsert(struct pmnode **root, struct lafblock *lafb, int size)
+static void vblock_upsert(struct pmnode **root, struct vblock *vblock, int size)
 {
 	int index = -1;
 	struct pmnode **slot = root;
 	struct pmnode **stacks[PMAP_STACK_HEIGHT];
+	VBLOCK_SIZE(vblock) = size;
 	while (*slot) {
 		struct pmnode *pnode = *slot;
-		int cmp = size - pnode->aux;
+		int cmp = size - VBLOCK_SIZE(container_of(pnode, struct vblock, node));
 		stacks[++index] = slot;
 		if (cmp < 0) {
 			slot = &pnode->left;
 		} else if (cmp > 0) {
 			slot = &pnode->right;
 		} else {
-			lafb->node = *pnode; // copy metadata
-			lafb->next = pnode;
-			*slot = &lafb->node; // linking
+			vblock->node = *pnode; // copy metadata
+			vblock->next = pnode;
+			*slot = &vblock->node; // linking
 			return;
 		}
 	}
 	// init for new one
-	lafb->node = (struct pmnode){ .left = NULL, .right = NULL, .height = 1, .aux = size };
-	lafb->next = NULL;
+	vblock->node = (struct pmnode){ .left = NULL, .right = NULL, .height = 1 };
+	vblock->next = NULL;
 
 	// link node to the NULL place.
-	*slot = &lafb->node;
+	*slot = &vblock->node;
 
 	// do balance start at the slot's parent
 	pmap_balance(stacks, index);
@@ -350,21 +344,21 @@ static void *free_pickup(struct kuai *kuai, int size)
 		}
 		return block;
 	}
-	struct lafblock *lafb = lafblock_remove(PMAP_ROOT(kuai), size);
-	if (lafb && LAFB_SIZE(lafb) >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
+	struct vblock *vblock = vblock_remove(PMAP_ROOT(kuai), size);
+	if (vblock && VBLOCK_SIZE(vblock) >= size + (BLK_BASE * KFREELIST_MAX)) { // Splits
 		// linear search the owner
 		struct slab **prev = &slab_head(kuai);
 		struct slab *slab = NULL;
 		while (slab = *prev) {
-			if (BPTR(lafb) > BPTR(slab) && BPTR(lafb) < BPTR(slab) + SLAB_SIZE)
+			if (BPTR(vblock) > BPTR(slab) && BPTR(vblock) < BPTR(slab) + SLAB_SIZE)
 				break;
 			prev = &slab_next(slab);
 		}
-		struct lafblock *next = (struct lafblock *) (BPTR(lafb) + size);
+		struct vblock *next = (struct vblock *) (BPTR(vblock) + size);
 		block_split(slab, next);
-		lafblock_upsert(PMAP_ROOT(kuai), next, LAFB_SIZE(lafb) - size);
+		vblock_upsert(PMAP_ROOT(kuai), next, VBLOCK_SIZE(vblock) - size);
 	}
-	return lafb;
+	return vblock;
 }
 
 void kuai_init(struct kuai *kuai)
@@ -395,7 +389,7 @@ void kuai_destroy(struct kuai *kuai)
 void kuai_reset(struct kuai *kuai)
 {
 	struct slab *slab = slab_head(kuai);
-	// exclude external allocating
+	// exclude external slab at the begining
 	while (slab && !slab_isinner(slab)) {
 		struct slab *next = slab_next(slab);
 		free(slab);
@@ -406,10 +400,9 @@ void kuai_reset(struct kuai *kuai)
 	if (!slab)
 		return;
 
-	if (slab_committed(slab) > COMMIT_BASE)
-		VRESET(slab + COMMIT_BASE, slab_committed(slab) - COMMIT_BASE);
-
-	slab_metazero(slab);
+	if (slab_committed(slab) > COMMIT_PAGE)
+		VRESET(slab + COMMIT_PAGE, slab_committed(slab) - COMMIT_PAGE);
+	memset(slab, 0, COMMIT_PAGE);
 	slab_init(slab);
 	slab_head(kuai) = slab;
 }
@@ -478,6 +471,6 @@ void kuai_free(struct kuai *kuai, void *block)
 		FREE_NEXT(block) = FREE_HEAD(kuai, i);
 		FREE_HEAD(kuai, i) = block;
 	} else {
-		lafblock_upsert(PMAP_ROOT(kuai), block, size);
+		vblock_upsert(PMAP_ROOT(kuai), block, size);
 	}
 }
