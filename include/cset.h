@@ -15,9 +15,9 @@
 /*
  * To keep it simple, I made it kind of like string, except that here `-1` is used as the terminator.
  *
- * All arguemnts(except 'out') marked as `struct cset*` type must be end with `-1`
+ * All arguemnts of type `struct cset*`(except 'out') must end with `-1`.
  *
- * All arguments(except 'out') cannot be NULL.
+ * All arguments(except 'out') must not be NULL.
  *
  * If 'out' is NULL, the function only returns the length required for 'out' (not including the '-1' terminator).
  */

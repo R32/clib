@@ -23,7 +23,7 @@
  *   |
  *   +- freelist : Released blocks are linked here during kuai_free()
  *         |
- *         +  [0] : (pmap root) : AVL tree for free blocks [MAX ~ 8KB]
+ *         +  [0] : (pmap root) : AVL tree for varing blocks [MAX ~ 8KB]
  *         +- [1] : list(1 * BLK_BASE)
  *         +- [2] : list(2 * BLK_BASE)
  *         +- ...

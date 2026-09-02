@@ -182,7 +182,8 @@ int cset_inter(const struct cset *restrict c1, const struct cset *restrict c2, s
 	// return cnt;
 //}
 
-int cset_sort(struct cset *cs) {
+int cset_sort(struct cset *cs)
+{
 	if (!cs || cset_is_empty(cs))
 		return 0;
 	int len = cset_length(cs);
